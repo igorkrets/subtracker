@@ -97,17 +97,17 @@
     {{-- Sort --}}
     <select name="sort" form="filter-form" onchange="document.getElementById('filter-form').submit()"
         class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <option value="expires_asc" {{ request('sort','expires_asc')==='expires_asc'?'selected':'' }}>По дате ↑</option>
-        <option value="expires_desc" {{ request('sort')==='expires_desc'?'selected':'' }}>По дате ↓</option>
-        <option value="name_asc" {{ request('sort')==='name_asc'?'selected':'' }}>По названию ↑</option>
-        <option value="cost_desc" {{ request('sort')==='cost_desc'?'selected':'' }}>По стоимости ↓</option>
-        <option value="created_desc" {{ request('sort')==='created_desc'?'selected':'' }}>Новые</option>
+        <option value="manual" {{ $sort==='manual'?'selected':'' }}>Свой порядок</option>
+        <option value="expires_asc" {{ $sort==='expires_asc'?'selected':'' }}>По дате ↑</option>
+        <option value="expires_desc" {{ $sort==='expires_desc'?'selected':'' }}>По дате ↓</option>
+        <option value="name_asc" {{ $sort==='name_asc'?'selected':'' }}>По названию ↑</option>
+        <option value="cost_desc" {{ $sort==='cost_desc'?'selected':'' }}>По стоимости ↓</option>
+        <option value="created_desc" {{ $sort==='created_desc'?'selected':'' }}>Новые</option>
     </select>
     <form id="filter-form" method="GET" action="{{ route('dashboard') }}" class="hidden">
         <input type="hidden" name="q" value="{{ request('q') }}">
         <input type="hidden" name="status" value="{{ request('status') }}">
         <input type="hidden" name="mode" value="{{ $mode }}">
-        <input type="hidden" name="sort" value="" id="sort-input">
     </form>
     {{-- Mode toggle --}}
     <div class="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">

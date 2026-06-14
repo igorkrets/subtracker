@@ -33,8 +33,125 @@
 </nav>
 
 {{-- Hero --}}
-<section class="py-20 px-4 text-center">
-    <div class="max-w-3xl mx-auto">
+<section class="relative py-20 px-4 text-center overflow-hidden">
+
+    {{-- Floating background cards --}}
+    <div id="hero-floats" class="absolute inset-0 pointer-events-none" aria-hidden="true">
+
+        {{-- Left column --}}
+        <div class="float-el float-side items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="left:2%;top:18%" data-depth="0.5">
+            <div class="float-inner flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#d50c2d"></div>
+                <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Hetzner CX21</span>
+                <span class="px-1.5 py-0.5 rounded-md bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-medium whitespace-nowrap">3 дн.</span>
+            </div>
+        </div>
+
+        <div class="float-el float-side items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="left:3%;top:44%" data-depth="0.3">
+            <div class="float-inner flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#e50914"></div>
+                <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Netflix</span>
+                <span class="text-gray-400 dark:text-gray-500 whitespace-nowrap">690 ₽/мес</span>
+            </div>
+        </div>
+
+        <div class="float-el float-side items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="left:1%;top:70%" data-depth="0.4">
+            <div class="float-inner flex flex-col gap-0.5">
+                <div class="flex items-center gap-2">
+                    <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#005bff"></div>
+                    <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Timeweb VPS</span>
+                </div>
+                <span class="text-gray-400 dark:text-gray-500 font-mono text-[10px] pl-7">145.11.11.112</span>
+            </div>
+        </div>
+
+        {{-- Right column --}}
+        <div class="float-el float-side items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="right:2%;top:20%" data-depth="0.45">
+            <div class="float-inner flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#24292e"></div>
+                <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">GitHub Pro</span>
+                <span class="px-1.5 py-0.5 rounded-md bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 font-medium whitespace-nowrap">Активен</span>
+            </div>
+        </div>
+
+        <div class="float-el float-side items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="right:3%;top:48%" data-depth="0.35">
+            <div class="float-inner flex flex-col gap-0.5">
+                <div class="flex items-center gap-2">
+                    <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#0080ff"></div>
+                    <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">DigitalOcean</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 pl-7">
+                    <span class="text-gray-400 dark:text-gray-500">$6/мес</span>
+                    <span class="px-1.5 py-0.5 rounded-md bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 font-medium">32 дн.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="float-el float-side items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="right:1%;top:71%" data-depth="0.5">
+            <div class="float-inner flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#ff9900"></div>
+                <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">AWS EC2</span>
+                <span class="text-gray-400 dark:text-gray-500 whitespace-nowrap">$29.99/мес</span>
+            </div>
+        </div>
+
+        {{-- Top / bottom (visible on md+) --}}
+        <div class="float-el float-mid items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="left:19%;top:4%" data-depth="0.2">
+            <div class="float-inner flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#f38020"></div>
+                <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Cloudflare</span>
+                <span class="text-gray-400 dark:text-gray-500 whitespace-nowrap">бесплатно</span>
+            </div>
+        </div>
+
+        <div class="float-el float-mid items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="right:18%;top:5%" data-depth="0.25">
+            <div class="float-inner flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#fc3f1d"></div>
+                <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Яндекс 360</span>
+                <span class="text-gray-400 dark:text-gray-500 whitespace-nowrap">219 ₽/мес</span>
+            </div>
+        </div>
+
+        <div class="float-el float-mid items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="left:17%;bottom:6%" data-depth="0.3">
+            <div class="float-inner flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#1a9cff"></div>
+                <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">example.ru</span>
+                <span class="px-1.5 py-0.5 rounded-md bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 font-medium whitespace-nowrap">14 дн.</span>
+            </div>
+        </div>
+
+        <div class="float-el float-mid items-center gap-2 bg-white/75 dark:bg-gray-800/75 backdrop-blur-sm border border-gray-100 dark:border-gray-700 rounded-xl px-3 py-2 shadow-sm text-xs absolute" style="right:16%;bottom:7%" data-depth="0.2">
+            <div class="float-inner flex items-center gap-2">
+                <div class="w-5 h-5 rounded-md flex-shrink-0" style="background:#f87171"></div>
+                <span class="font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Spotify</span>
+                <span class="px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 font-medium whitespace-nowrap">Просрочено</span>
+            </div>
+        </div>
+
+    </div>
+
+    <style>
+    @keyframes heroFloatA {
+        0%,100% { transform: translateY(0px) rotate(-1deg); }
+        50%      { transform: translateY(-10px) rotate(1deg); }
+    }
+    @keyframes heroFloatB {
+        0%,100% { transform: translateY(0px) rotate(1deg); }
+        50%      { transform: translateY(-14px) rotate(-1deg); }
+    }
+    @keyframes heroFloatC {
+        0%,100% { transform: translateY(0px); }
+        50%      { transform: translateY(-8px); }
+    }
+    .float-el { transition: transform 0.12s ease-out; will-change: transform; }
+    /* Responsive visibility without Tailwind — controls which elements show at which breakpoints */
+    .float-side { display: none; }
+    .float-mid  { display: none; }
+    @media (min-width: 640px)  { .float-mid  { display: flex; } }
+    @media (min-width: 1024px) { .float-side { display: flex; } }
+    </style>
+
+    <div class="relative z-10 max-w-3xl mx-auto">
         <div class="flex justify-center mb-6">
             <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-600/30">
                 <x-icon icon="layers" icon-set="lucide" class="w-9 h-9 text-white" />
@@ -208,5 +325,54 @@
     </div>
 </footer>
 
+<script>
+(function () {
+    var els = [];
+    var mouseX = 0, mouseY = 0, scrollY = 0;
+    var ticking = false;
+
+    function init() {
+        els = Array.from(document.querySelectorAll('#hero-floats .float-el'));
+        els.forEach(function (el, i) {
+            // stagger the float animation so they don't all move in sync
+            var inner = el.querySelector('.float-inner');
+            if (inner) inner.style.animationDelay = (i * 0.4) + 's';
+        });
+    }
+
+    function apply() {
+        ticking = false;
+        var cx = window.innerWidth / 2;
+        var cy = window.innerHeight / 2;
+        els.forEach(function (el) {
+            var depth = parseFloat(el.dataset.depth || 0.3);
+            var tx = (mouseX - cx) / cx * depth * 28;
+            var ty = (mouseY - cy) / cy * depth * 18 - scrollY * depth * 0.08;
+            el.style.transform = 'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px)';
+        });
+    }
+
+    function schedule() {
+        if (!ticking) { ticking = true; requestAnimationFrame(apply); }
+    }
+
+    document.addEventListener('mousemove', function (e) {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        schedule();
+    });
+
+    window.addEventListener('scroll', function () {
+        scrollY = window.scrollY;
+        schedule();
+    }, { passive: true });
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
 </body>
 </html>

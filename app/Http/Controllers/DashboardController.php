@@ -44,16 +44,25 @@ class DashboardController extends Controller
             $query->where('group_id', $groupId);
         }
 
-        // Sort
-        $sort = $request->get('sort', 'expires_asc');
+        // Sort: if provided in request, save to user; otherwise use user's saved preference
+        $validSorts = ['manual','expires_asc','expires_desc','name_asc','name_desc','cost_asc','cost_desc','created_desc'];
+        if ($request->has('sort') && in_array($request->get('sort'), $validSorts)) {
+            $sort = $request->get('sort');
+            if ($user->sort_preference !== $sort) {
+                $user->update(['sort_preference' => $sort]);
+            }
+        } else {
+            $sort = $user->sort_preference ?? 'manual';
+        }
         match ($sort) {
+            'expires_asc'  => $query->orderByRaw('expires_at IS NULL ASC')->orderBy('expires_at'),
             'expires_desc' => $query->orderByRaw('expires_at IS NULL ASC')->orderBy('expires_at', 'desc'),
-            'name_asc' => $query->orderBy('name'),
-            'name_desc' => $query->orderBy('name', 'desc'),
-            'cost_asc' => $query->orderBy('cost'),
-            'cost_desc' => $query->orderBy('cost', 'desc'),
+            'name_asc'     => $query->orderBy('name'),
+            'name_desc'    => $query->orderBy('name', 'desc'),
+            'cost_asc'     => $query->orderBy('cost'),
+            'cost_desc'    => $query->orderBy('cost', 'desc'),
             'created_desc' => $query->orderBy('created_at', 'desc'),
-            default => $query->orderByRaw('expires_at IS NULL ASC')->orderBy('expires_at'),
+            default        => $query->orderByRaw('COALESCE(sort_order, 999999) ASC')->orderBy('id'),
         };
 
         $services = $query->paginate(50)->withQueryString();
@@ -93,7 +102,7 @@ class DashboardController extends Controller
 
         return view('dashboard.index', compact(
             'services', 'groups', 'stats', 'spendStats', 'mode', 'groupedServices',
-            'displayCurrency', 'currencies', 'groupSpend'
+            'displayCurrency', 'currencies', 'groupSpend', 'sort'
         ));
     }
 
