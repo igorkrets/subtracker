@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -9,7 +10,7 @@ class ExportService
 {
     public function getServicesQuery(User $user, array $filters = []): Builder
     {
-        $query = $user->services()->with(['group', 'serviceType']);
+        $query = Service::with(['group', 'serviceType'])->where('user_id', $user->id);
 
         if (!empty($filters['group_id'])) {
             $query->where('group_id', $filters['group_id']);

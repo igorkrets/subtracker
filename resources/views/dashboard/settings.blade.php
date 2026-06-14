@@ -4,10 +4,17 @@
 <div x-data="settingsPage()" x-init="init()">
     <h1 class="text-xl font-semibold mb-6">Настройки аккаунта</h1>
 
-    {{-- Tabs --}}
-    <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
+    {{-- Tabs: select on mobile, button tabs on desktop --}}
+    <select class="sm:hidden w-full px-3 py-2.5 mb-5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        x-model="tab" @change="history.replaceState(null, '', '?tab=' + tab)">
         @foreach([['profile','Профиль'],['security','Безопасность'],['api','API'],['telegram','Telegram'],['notifications','Уведомления'],['webhooks','Вебхуки']] as [$key, $label])
-        <button @click="tab = '{{ $key }}'" :class="tab === '{{ $key }}' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+        <option value="{{ $key }}">{{ $label }}</option>
+        @endforeach
+    </select>
+    <div class="hidden sm:flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
+        @foreach([['profile','Профиль'],['security','Безопасность'],['api','API'],['telegram','Telegram'],['notifications','Уведомления'],['webhooks','Вебхуки']] as [$key, $label])
+        <button @click="tab = '{{ $key }}'; history.replaceState(null, '', '?tab={{ $key }}')"
+            :class="tab === '{{ $key }}' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
             class="px-4 py-2 text-sm font-medium transition -mb-px whitespace-nowrap">{{ $label }}</button>
         @endforeach
     </div>
@@ -32,8 +39,8 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Таймзона</label>
                 <select name="timezone" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    @foreach($timezones as $tz)
-                    <option value="{{ $tz }}" {{ $user->timezone === $tz ? 'selected' : '' }}>{{ $tz }}</option>
+                    @foreach($timezones as $tzId => $tzLabel)
+                    <option value="{{ $tzId }}" {{ $user->timezone === $tzId ? 'selected' : '' }}>{{ $tzLabel }}</option>
                     @endforeach
                 </select>
             </div>
@@ -174,31 +181,96 @@
                 Перегенерировать токен
             </button>
         </form>
+        <div class="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <a href="{{ route('api.docs') }}" target="_blank"
+                class="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
+                <x-icon icon="book-open" icon-set="lucide" class="w-4 h-4" />
+                Документация API
+                <x-icon icon="external-link" icon-set="lucide" class="w-3 h-3 opacity-60" />
+            </a>
+        </div>
     </div>
 
     {{-- Telegram --}}
-    <div x-show="tab === 'telegram'" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 max-w-lg">
-        <h2 class="text-lg font-medium mb-4">Telegram-уведомления</h2>
-        @if($user->tg_chat_id)
-        <div class="flex items-center gap-2 text-green-600 dark:text-green-400 mb-4">
-            <x-icon icon="check" icon-set="lucide" class="w-5 h-5" />
-            <span>Подключён (с {{ $user->tg_connected_at?->format('d.m.Y') }})</span>
-        </div>
-        <form method="POST" action="{{ route('settings.tg.unlink') }}">
-            @csrf
-            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg">Отвязать</button>
-        </form>
-        @else
-        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-            <p class="text-sm text-blue-700 dark:text-blue-300">
-                Напишите боту <strong>@{{ env('TELEGRAM_BOT_USERNAME', 'YourBotName') }}</strong> команду:
+    <div x-show="tab === 'telegram'" class="max-w-lg space-y-4">
+
+        {{-- How to connect --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <h2 class="text-base font-semibold mb-3 flex items-center gap-2">
+                <x-icon icon="send" icon-set="lucide" class="w-4 h-4 text-blue-500" />
+                Как подключить
+            </h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                Откройте бота
+                <a href="https://t.me/{{ config('services.telegram.username', env('TELEGRAM_BOT_USERNAME')) }}"
+                   target="_blank"
+                   class="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                    {{ '@' }}{{ config('services.telegram.username', env('TELEGRAM_BOT_USERNAME', 'YourBot')) }}
+                </a>
+                и отправьте команду:
             </p>
-            <code class="block mt-2 bg-blue-100 dark:bg-blue-900/40 rounded px-3 py-2 text-sm font-mono select-all">
-                /start {{ $user->tg_code }}
-            </code>
+            <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2.5">
+                <code class="flex-1 text-sm font-mono select-all text-gray-800 dark:text-gray-100">
+                    /start {{ $user->tg_code }}
+                </code>
+                <button type="button" onclick="navigator.clipboard.writeText('/start {{ $user->tg_code }}').then(() => showToast('Скопировано'))"
+                    class="flex-shrink-0 p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                    title="Скопировать">
+                    <x-icon icon="copy" icon-set="lucide" class="w-4 h-4" />
+                </button>
+            </div>
         </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400">Ваш код привязки: <strong>{{ $user->tg_code }}</strong></p>
-        @endif
+
+        {{-- Connected accounts --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <h2 class="text-base font-semibold mb-3 flex items-center gap-2">
+                <x-icon icon="smartphone" icon-set="lucide" class="w-4 h-4 text-gray-500" />
+                Подключённые аккаунты
+            </h2>
+
+            @if($user->tg_chat_id)
+            <div class="flex items-center gap-3 p-3 rounded-lg border border-green-100 dark:border-green-900/40 bg-green-50 dark:bg-green-900/20">
+                {{-- Avatar placeholder --}}
+                <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 text-white font-bold text-lg">
+                    <x-icon icon="send" icon-set="lucide" class="w-5 h-5" />
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sm font-medium text-gray-900 dark:text-gray-100">Telegram</span>
+                        <span class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                            <x-icon icon="check-circle" icon-set="lucide" class="w-3.5 h-3.5" />
+                            Подключён
+                        </span>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
+                        <div>Chat ID: <span class="font-mono">{{ $user->tg_chat_id }}</span></div>
+                        @if($user->tg_connected_at)
+                        <div>С {{ $user->tg_connected_at->format('d.m.Y') }}</div>
+                        @endif
+                    </div>
+                </div>
+                {{-- Unlink button --}}
+                <form method="POST" action="{{ route('settings.tg.unlink') }}" class="flex-shrink-0"
+                      onsubmit="return confirm('Отвязать Telegram? Уведомления перестанут приходить.')">
+                    @csrf
+                    <button type="submit"
+                        class="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                        title="Отвязать">
+                        <x-icon icon="unlink" icon-set="lucide" class="w-4 h-4" />
+                    </button>
+                </form>
+            </div>
+            @else
+            <div class="flex flex-col items-center justify-center py-6 text-center">
+                <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
+                    <x-icon icon="smartphone" icon-set="lucide" class="w-6 h-6 text-gray-400" />
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Подключённые аккаунты отсутствуют</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Используйте команду выше для подключения</p>
+            </div>
+            @endif
+        </div>
+
     </div>
 
     {{-- Notification rules --}}

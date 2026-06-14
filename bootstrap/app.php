@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->validateCsrfTokens(except: [
+            'api/telegram/webhook',
+        ]);
+
         $middleware->web(append: [
             CheckBlocked::class,
             LogRequest::class,
@@ -34,6 +38,35 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/v1/*') || $request->wantsJson(),
         );
+
+        // Clean JSON errors for API — never expose stack traces or file paths
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if (!($request->is('api/v1/*') || $request->wantsJson())) {
+                return null; // let default handler render HTML for web routes
+            }
+
+            if ($e instanceof ValidationException) {
+                return response()->json([
+                    'message' => 'Ошибка валидации',
+                    'errors'  => $e->errors(),
+                ], 422);
+            }
+
+            $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
+
+            $message = match ($status) {
+                400 => 'Неверный запрос',
+                401 => 'Требуется авторизация',
+                403 => 'Доступ запрещён',
+                404 => 'Не найдено',
+                405 => 'Метод не разрешён',
+                422 => 'Ошибка валидации',
+                429 => 'Слишком много запросов',
+                default => 'Внутренняя ошибка сервера',
+            };
+
+            return response()->json(['message' => $message], $status);
+        });
 
         $exceptions->report(function (\Throwable $e) {
             if ($e instanceof ValidationException || $e->getCode() === 404) {

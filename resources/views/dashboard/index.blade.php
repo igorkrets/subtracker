@@ -21,20 +21,63 @@
 </div>
 
 {{-- Spend analytics --}}
-@if(!empty($spendStats['monthly']))
-<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6">
-    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Расходы на подписки</h3>
+@if($spendStats['total_monthly'] > 0 || !empty($spendStats['by_currency']))
+<div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6"
+     x-data="{ saving: false }" id="spend-widget">
+    <div class="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Расходы на подписки</h3>
+        {{-- Currency selector --}}
+        <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-400">Валюта:</span>
+            <select id="display-currency-select"
+                class="text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                @change="
+                    saving = true;
+                    fetch('{{ route('dashboard.currency') }}', {
+                        method: 'PATCH',
+                        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':window.csrfToken,'Accept':'application/json'},
+                        body: JSON.stringify({currency: $el.value})
+                    }).then(() => { saving = false; window.location.reload(); })
+                ">
+                @foreach($currencies as $cur)
+                <option value="{{ $cur }}" {{ $displayCurrency === $cur ? 'selected' : '' }}>{{ $cur }}</option>
+                @endforeach
+            </select>
+            <span x-show="saving" class="inline-flex text-gray-400">
+                <x-icon icon="loader-2" icon-set="lucide" class="w-3.5 h-3.5 animate-spin" />
+            </span>
+        </div>
+    </div>
+
     <div class="flex flex-wrap gap-6">
-        @foreach($spendStats['monthly'] as $currency => $amount)
+        {{-- Total in display currency --}}
         <div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">В месяц ({{ $currency }})</div>
-            <div class="font-semibold">{{ number_format($amount, 2) }} {{ $currency }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">В месяц</div>
+            <div class="text-xl font-bold text-blue-600 dark:text-blue-400">
+                {{ number_format($spendStats['total_monthly'], 2) }} {{ $displayCurrency }}
+            </div>
         </div>
         <div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">В год ({{ $currency }})</div>
-            <div class="font-semibold">{{ number_format($spendStats['yearly'][$currency] ?? 0, 2) }} {{ $currency }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">В год</div>
+            <div class="text-xl font-bold text-blue-600 dark:text-blue-400">
+                {{ number_format($spendStats['total_yearly'], 2) }} {{ $displayCurrency }}
+            </div>
         </div>
-        @endforeach
+
+        {{-- Native breakdown --}}
+        @if(count($spendStats['by_currency']) > 1 ||
+            (count($spendStats['by_currency']) === 1 && !array_key_exists($displayCurrency, $spendStats['by_currency'])))
+        <div class="border-l border-gray-200 dark:border-gray-700 pl-6">
+            <div class="text-xs text-gray-400 mb-1">В оригинальных валютах (в месяц)</div>
+            <div class="flex flex-wrap gap-3">
+                @foreach($spendStats['by_currency'] as $cur => $amt)
+                <span class="text-xs text-gray-600 dark:text-gray-300">
+                    {{ number_format($amt, 2) }} <span class="font-medium">{{ $cur }}</span>
+                </span>
+                @endforeach
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 @endif
@@ -79,12 +122,14 @@
     </div>
     {{-- Actions --}}
     <button @click="resetForm(); editingService = null; showServiceModal = true"
-        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
-        <x-icon icon="plus" icon-set="lucide" class="w-4 h-4" /> Сервис
+        class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition">
+        <x-icon icon="plus" icon-set="lucide" class="w-4 h-4 flex-shrink-0" />
+        <span>Сервис</span>
     </button>
     <button @click="showGroupModal = true; editingGroup = null"
-        class="flex items-center gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition">
-        <x-icon icon="plus" icon-set="lucide" class="w-4 h-4" /> Группа
+        class="flex items-center gap-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition">
+        <x-icon icon="plus" icon-set="lucide" class="w-4 h-4 flex-shrink-0" />
+        <span class="hidden sm:inline">Группа</span>
     </button>
     {{-- Export dropdown --}}
     <div class="relative" x-data="{ open: false }">
@@ -154,9 +199,15 @@
         x-init="$watch('expanded', v => localStorage.setItem('group_{{ $group?->id ?? 'null' }}', v))">
 
         {{-- Group header --}}
-        <div class="flex items-center gap-2 px-4 py-3 cursor-pointer select-none" @click.self="expanded = !expanded">
+        @php
+            $gSymbols = ['RUB'=>'₽','USD'=>'$','EUR'=>'€','GBP'=>'£','CNY'=>'¥','UAH'=>'₴','KZT'=>'₸','BYN'=>'Br','TRY'=>'₺'];
+            $gSym     = $gSymbols[$displayCurrency] ?? $displayCurrency;
+            $gKey     = $group ? $group->id : 'null';
+            $gSpend   = $groupSpend[$gKey] ?? 0;
+        @endphp
+        <div class="flex items-center gap-2 px-4 py-3 cursor-pointer select-none" @click="expanded = !expanded">
             <x-icon icon="grip-vertical" icon-set="lucide" class="w-4 h-4 text-gray-400 drag-handle cursor-grab" />
-            <button @click="expanded = !expanded" class="flex items-center gap-1 text-sm" :aria-expanded="expanded">
+            <button @click.stop="expanded = !expanded" class="flex items-center gap-1 text-sm" :aria-expanded="expanded">
                 <span :class="expanded ? 'rotate-90' : ''" class="inline-flex transition-transform">
                     <x-icon icon="chevron-right" icon-set="lucide" class="w-4 h-4" />
                 </span>
@@ -164,10 +215,22 @@
             @if($group)
                 <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {{ $group->color ?? '#94a3b8' }}"></span>
                 <span class="font-medium text-sm">{{ $group->name }}</span>
-                <span class="ml-auto text-xs text-gray-400">
+            @else
+                <span class="font-medium text-sm text-gray-400">Без группы</span>
+            @endif
+            @if($group)
+                <div class="ml-auto text-right flex-shrink-0">
                     @php $nearest = $group->nearest_expires_at; @endphp
-                    @if($nearest) {{ \Carbon\Carbon::parse($nearest)->format('d.m.Y') }} @endif
-                </span>
+                    @if($nearest)
+                    <div class="text-xs text-gray-400">{{ \Carbon\Carbon::parse($nearest)->format('d.m.Y') }}</div>
+                    @endif
+                    @if($gSpend > 0)
+                    <div class="text-xs text-gray-400 dark:text-gray-500"
+                         title="{{ number_format($gSpend * 12, 0, '.', ' ') }} {{ $gSym }}/год">
+                        {{ number_format($gSpend, 0, '.', ' ') }} {{ $gSym }}/мес
+                    </div>
+                    @endif
+                </div>
                 <button wire:click.stop class="p-1 hover:text-red-500" title="{{ $group->notifications_enabled ? 'Отключить уведомления' : 'Включить уведомления' }}"
                     @click.stop="toggleGroupNotifications({{ $group->id }}, $el)">
                     <x-icon icon="{{ $group->notifications_enabled ? 'bell' : 'bell' }}" icon-set="lucide" class="w-4 h-4 {{ $group->notifications_enabled ? 'text-blue-500' : 'text-gray-300' }}" />
@@ -177,8 +240,14 @@
                     <x-icon icon="settings" icon-set="lucide" class="w-4 h-4" />
                 </button>
             @else
-                <span class="font-medium text-sm text-gray-400">Без группы</span>
-                <span class="ml-auto"></span>
+                <div class="ml-auto text-right flex-shrink-0">
+                    @if($gSpend > 0)
+                    <div class="text-xs text-gray-400 dark:text-gray-500"
+                         title="{{ number_format($gSpend * 12, 0, '.', ' ') }} {{ $gSym }}/год">
+                        {{ number_format($gSpend, 0, '.', ' ') }} {{ $gSym }}/мес
+                    </div>
+                    @endif
+                </div>
             @endif
         </div>
 
@@ -187,7 +256,7 @@
             @forelse($groupServices as $service)
                 @include('components.service-card', ['service' => $service])
             @empty
-                <div class="px-4 py-3 text-sm text-gray-400 text-center">Нет сервисов</div>
+                <div class="empty-placeholder px-4 py-3 text-sm text-gray-400 text-center">Нет сервисов</div>
             @endforelse
         </div>
     </div>
@@ -200,13 +269,18 @@
     @keydown.escape.window="showServiceModal = false">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         role="dialog" aria-modal="true">
-        <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 class="font-semibold text-lg" x-text="editingService ? 'Редактировать сервис' : 'Добавить сервис'"></h2>
             <button @click="showServiceModal = false" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                 <x-icon icon="x" icon-set="lucide" class="w-5 h-5" />
             </button>
         </div>
-        <form @submit.prevent="saveService()" class="p-6 space-y-4">
+        @php
+        $serviceIcons = ['server','database','hard-drive','cloud','network','globe','shield','lock','key','code','layers','box','archive','zap','activity','credit-bit','dollar-sign','mail','bell','settings','tag','sparkles','trending-up','link','webhook','server-cog','palette','waypoints'];
+        $serviceIcons = array_filter($serviceIcons, fn($i) => file_exists(public_path("icons/lucide/{$i}.svg")));
+        $serviceColors = ['#2563EB','#16A34A','#DC2626','#D97706','#7C3AED','#0891B2','#64748B','#EC4899','#0F766E','#C2410C','#1D4ED8','#15803D'];
+        @endphp
+        <form @submit.prevent="saveService()" class="p-4 sm:p-6 space-y-4">
             {{-- Autocomplete name --}}
             <div class="relative">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название *</label>
@@ -226,7 +300,62 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            {{-- Icon & Color picker --}}
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Иконка и цвет</label>
+
+                {{-- Preview + Colors row --}}
+                <div class="flex items-center gap-3">
+                    {{-- Preview box: x-html copies SVG from clicked grid button --}}
+                    <div class="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center border-2 border-gray-200 dark:border-gray-600 transition-colors"
+                         :style="form.color ? 'background-color:' + form.color + '22; border-color:' + form.color + '55' : ''">
+                        <div x-show="form.icon" style="display:none"
+                             x-html="iconPreviewHtml"
+                             :style="'color:' + (form.color || '#64748b')"
+                             class="flex items-center justify-center"></div>
+                        <div x-show="!form.icon" style="color:#cbd5e1">
+                            <x-icon icon="tag" icon-set="lucide" class="w-6 h-6" />
+                        </div>
+                    </div>
+
+                    {{-- Color swatches --}}
+                    <div class="flex flex-wrap gap-2 items-center flex-1">
+                        @foreach($serviceColors as $c)
+                        <button type="button"
+                            @click="form.color = form.color === '{{ $c }}' ? '' : '{{ $c }}'"
+                            class="w-7 h-7 rounded-full flex-shrink-0 transition-all"
+                            :style="form.color === '{{ $c }}'
+                                ? 'background-color:{{ $c }}; outline:3px solid {{ $c }}; outline-offset:2px'
+                                : 'background-color:{{ $c }}'"
+                            title="{{ $c }}"></button>
+                        @endforeach
+                        {{-- Custom color: palette icon label triggers hidden input --}}
+                        <label class="w-7 h-7 flex-shrink-0 cursor-pointer flex items-center justify-center rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors" title="Свой цвет">
+                            <x-icon icon="palette" icon-set="lucide" class="w-3.5 h-3.5" />
+                            <input type="color" x-model="form.color" class="sr-only">
+                        </label>
+                    </div>
+                </div>
+
+                {{-- Icon grid --}}
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:6px">
+                    @foreach($serviceIcons as $ico)
+                    <button type="button"
+                        data-ico="{{ $ico }}"
+                        @click="pickIcon('{{ $ico }}', $el)"
+                        class="aspect-square flex items-center justify-center rounded-lg border-2 transition-colors"
+                        :class="form.icon === '{{ $ico }}'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500'"
+                        :style="'color:' + (form.icon === '{{ $ico }}' ? (form.color || '#2563eb') : (form.color ? form.color + 'aa' : '#94a3b8'))"
+                        title="{{ $ico }}">
+                        <x-icon icon="{{ $ico }}" icon-set="lucide" class="w-5 h-5" />
+                    </button>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL</label>
                     <input type="url" x-model="form.url" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -237,7 +366,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Группа</label>
                     <select x-model="form.group_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -265,7 +394,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Дата истечения</label>
                     <input type="date" x-model="form.expires_at" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -298,7 +427,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Провайдер</label>
                     <input type="text" x-model="form.provider_name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -413,25 +542,36 @@
                 <input type="text" x-model="groupForm.name" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Цвет</label>
-                <div class="flex gap-2 flex-wrap">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Цвет</label>
+                <div class="flex gap-2 flex-wrap items-center">
                     @foreach(['#2563EB','#16A34A','#DC2626','#D97706','#7C3AED','#0891B2','#64748B','#EC4899','#0F766E','#C2410C','#1D4ED8','#15803D'] as $c)
-                    <button type="button" @click="groupForm.color = '{{ $c }}'"
-                        class="w-7 h-7 rounded-full border-2 transition"
-                        :class="groupForm.color === '{{ $c }}' ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'"
-                        style="background-color: {{ $c }}">
+                    <button type="button" @click="groupForm.color = groupForm.color === '{{ $c }}' ? '' : '{{ $c }}'"
+                        class="w-7 h-7 rounded-full flex-shrink-0 transition-all"
+                        :style="groupForm.color === '{{ $c }}'
+                            ? 'background-color:{{ $c }}; outline:3px solid {{ $c }}; outline-offset:2px'
+                            : 'background-color:{{ $c }}'">
                     </button>
                     @endforeach
-                    <input type="color" x-model="groupForm.color" class="w-7 h-7 rounded-full cursor-pointer border border-gray-300">
+                    <label class="w-7 h-7 flex-shrink-0 cursor-pointer flex items-center justify-center rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:border-gray-400 transition-colors" title="Свой цвет">
+                        <x-icon icon="palette" icon-set="lucide" class="w-3.5 h-3.5" />
+                        <input type="color" x-model="groupForm.color" class="sr-only">
+                    </label>
                 </div>
             </div>
-            <div class="flex justify-end gap-3">
-                <button type="button" @click="showGroupModal = false"
-                    class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg">Отмена</button>
-                <button type="submit" :disabled="saving"
-                    class="px-6 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                    <span x-text="editingGroup ? 'Обновить' : 'Создать'"></span>
+            <div class="flex items-center justify-between gap-3">
+                <button x-show="editingGroup" type="button"
+                    @click="showGroupModal = false; deleteGroup(editingGroup)"
+                    class="whitespace-nowrap px-4 py-2 text-sm text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
+                    Удалить группу
                 </button>
+                <div class="flex gap-3 ml-auto">
+                    <button type="button" @click="showGroupModal = false"
+                        class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg">Отмена</button>
+                    <button type="submit" :disabled="saving"
+                        class="px-6 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        <span x-text="editingGroup ? 'Обновить' : 'Создать'"></span>
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -500,11 +640,13 @@ function dashboard() {
         saving: false,
         localPwd: null,
         encNote: { plain: '', wrongPwd: false, showTempPwd: false, tempPwd: '' },
+        iconPreviewHtml: '',
         form: {
             name: '', url: '', ip: '', group_id: '', type_slug: '',
             expires_at: '', billing_cycle: '', cost: '', currency: 'RUB',
             provider_name: '', provider_url: '', notes: '', encrypted_notes: null,
             notifications_enabled: true, auto_renew: false,
+            icon: '', icon_set: 'lucide', color: '',
         },
         groupForm: { name: '', color: '#2563EB' },
         catalogResults: [],
@@ -560,7 +702,10 @@ function dashboard() {
                     handle: '.service-drag-handle',
                     group: 'services',
                     animation: 150,
+                    onAdd: () => this.updateEmptyPlaceholders(),
+                    onRemove: () => this.updateEmptyPlaceholders(),
                     onEnd: (evt) => {
+                        this.updateEmptyPlaceholders();
                         const items = [];
                         document.querySelectorAll('.service-row').forEach((row, i) => {
                             items.push({ id: row.dataset.id, order: i, group_id: row.closest('.services-container')?.dataset.groupId || null });
@@ -571,10 +716,40 @@ function dashboard() {
             });
         },
 
+        updateEmptyPlaceholders() {
+            document.querySelectorAll('.services-container').forEach(container => {
+                const placeholder = container.querySelector('.empty-placeholder');
+                if (!placeholder) return;
+                const hasServices = container.querySelector('.service-row');
+                placeholder.style.display = hasServices ? 'none' : '';
+            });
+        },
+
+        pickIcon(ico, el) {
+            if (this.form.icon === ico) {
+                this.form.icon = '';
+                this.iconPreviewHtml = '';
+            } else {
+                this.form.icon = ico;
+                this.form.icon_set = 'lucide';
+                this.iconPreviewHtml = el.innerHTML;
+            }
+        },
+
+        syncIconPreview() {
+            if (!this.form.icon) { this.iconPreviewHtml = ''; return; }
+            this.$nextTick(() => {
+                const btn = this.$el.querySelector(`[data-ico="${this.form.icon}"]`);
+                if (btn) this.iconPreviewHtml = btn.innerHTML;
+            });
+        },
+
         resetForm() {
             this.form = { name: '', url: '', ip: '', group_id: '', type_slug: '', expires_at: '',
                 billing_cycle: '', cost: '', currency: 'RUB', provider_name: '', provider_url: '',
-                notes: '', encrypted_notes: null, notifications_enabled: true, auto_renew: false };
+                notes: '', encrypted_notes: null, notifications_enabled: true, auto_renew: false,
+                icon: '', icon_set: 'lucide', color: '' };
+            this.iconPreviewHtml = '';
             this.encNote = { plain: '', wrongPwd: false, showTempPwd: false, tempPwd: '' };
             this.catalogResults = [];
         },
@@ -593,6 +768,7 @@ function dashboard() {
                 }
             }
             this.showServiceModal = true;
+            this.syncIconPreview();
         },
 
         async decryptWithTempPwd() {

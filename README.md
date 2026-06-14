@@ -1,58 +1,207 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SubTracker
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Трекер подписок, серверов и доменов с Telegram-уведомлениями и REST API.
 
-## About Laravel
+**Демо**: https://sub.syspage.ru
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Что делает
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+SubTracker помогает не забыть продлить VPS, домен, SSL, SaaS-подписку или любой другой сервис. Вместо таблиц — удобный интерфейс, группировка, уведомления в Telegram и полный REST API для автоматизации.
 
-## Learning Laravel
+### Возможности
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- Учёт сервисов: дата истечения, стоимость (в оригинальной валюте), IP, URL, заметки
+- Telegram-уведомления за 1/3/7/14/30 дней до истечения
+- Продление сервисов прямо из Telegram (inline-кнопки)
+- Группировка с drag-and-drop, цветовые метки, иконки
+- Каталог 85+ провайдеров (Hetzner, DigitalOcean, Cloudflare, Timeweb и др.)
+- Зашифрованные заметки (AES-256-GCM, ключ только у пользователя)
+- REST API v1 с документацией и интерактивным тестированием прямо в браузере
+- Экспорт: XLSX, PDF, HTML, JSON-бекап / импорт
+- Вебхуки и настройка уведомлений по группам
+- Тёмная тема, адаптивный дизайн, PWA
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Требования
 
-## Agentic Development
+| | |
+|---|---|
+| PHP | 8.3+ |
+| Node.js | 20+ |
+| Composer | 2 |
+| База данных | SQLite (по умолчанию), MySQL 8+ или PostgreSQL 15+ |
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+---
+
+## Установка — обычный сервер
+
+### 1. Клонирование и зависимости
 
 ```bash
-composer require laravel/boost --dev
+git clone https://github.com/yourname/subtracker.git /var/www/subtracker
+cd /var/www/subtracker
 
-php artisan boost:install
+cp .env.example .env
+nano .env  # Заполните APP_URL, DB_* и другие параметры
+
+composer install --optimize-autoloader --no-dev
+npm ci && npm run build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Инициализация
 
-## Contributing
+```bash
+php artisan key:generate
+php artisan migrate --force
+php artisan storage:link
+php artisan optimize
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Права для PHP-FPM (www-data)
+chown -R www-data:www-data storage bootstrap/cache
+```
 
-## Code of Conduct
+### 3. Nginx
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+    root /var/www/subtracker/public;
+    index index.php;
 
-## Security Vulnerabilities
+    client_max_body_size 20M;
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
 
-## License
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 60;
+    }
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+    location ~ /\.ht {
+        deny all;
+    }
+}
+```
+
+Для HTTPS добавьте certbot: `certbot --nginx -d yourdomain.com`
+
+### 4. Планировщик (cron)
+
+Добавьте от имени www-data:
+
+```bash
+crontab -u www-data -e
+```
+
+```
+* * * * * php /var/www/subtracker/artisan schedule:run >> /dev/null 2>&1
+```
+
+### 5. Telegram-бот
+
+```bash
+# Установить вебхук (выполнять на сервере после настройки HTTPS)
+php artisan telegram:webhook set
+
+# Удалить вебхук
+php artisan telegram:webhook delete
+```
+
+---
+
+## Установка — Docker Compose
+
+### Быстрый старт
+
+```bash
+git clone https://github.com/yourname/subtracker.git
+cd subtracker
+
+cp .env.example .env
+# Укажите APP_URL=http://localhost:8080 (или ваш домен)
+
+docker compose up -d --build
+
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate --force
+docker compose exec app php artisan optimize
+```
+
+Приложение доступно на `http://localhost:8080`.
+
+Файлы хранятся в `./storage` и `./database` — смонтированы как volumes.
+
+### Webhook для Telegram через Docker
+
+```bash
+docker compose exec app php artisan telegram:webhook set
+```
+
+---
+
+## Переменные окружения (.env)
+
+```dotenv
+APP_NAME=SubTracker
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://yourdomain.com
+APP_KEY=                          # php artisan key:generate
+
+# База данных SQLite (по умолчанию)
+DB_CONNECTION=sqlite
+# DB_DATABASE=/var/www/subtracker/database/database.sqlite
+
+# Или MySQL
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=subtracker
+# DB_USERNAME=subtracker
+# DB_PASSWORD=secret
+
+SESSION_DRIVER=database
+CACHE_STORE=database
+QUEUE_CONNECTION=database
+
+# Telegram-бот (опционально — для уведомлений)
+TELEGRAM_BOT_TOKEN=123456789:ABC-DEFghijklmno
+TELEGRAM_WEBHOOK_SECRET=случайная_строка_32_символа
+
+# Контакты в подвале лендинга
+CONTACT_EMAIL=admin@example.com
+CONTACT_TG=@yourhandle
+```
+
+---
+
+## Первый вход
+
+После установки перейдите на `APP_URL` и зарегистрируйтесь. Первый пользователь автоматически получает доступ к `/admin`.
+
+---
+
+## Обновление
+
+```bash
+git pull
+composer install --optimize-autoloader --no-dev
+npm ci && npm run build
+php artisan migrate --force
+php artisan optimize
+chown -R www-data:www-data storage bootstrap/cache
+```
+
+---
+
+## Стек
+
+Laravel 13 · PHP 8.3 · Alpine.js 3 · Tailwind CSS 4 · SQLite/MySQL · Vite

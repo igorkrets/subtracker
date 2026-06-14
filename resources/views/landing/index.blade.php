@@ -25,7 +25,9 @@
                 <x-icon icon="sun" icon-set="lucide" class="w-5 h-5 hidden dark:block" />
             </button>
             <a href="{{ route('login') }}" class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">Войти</a>
+            @if(config('app.register_enable'))
             <a href="{{ route('register') }}" class="text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg transition">Начать бесплатно</a>
+            @endif
         </div>
     </div>
 </nav>
@@ -41,14 +43,23 @@
         <h1 class="text-4xl sm:text-5xl font-bold mb-5 leading-tight">
             Все подписки и серверы<br>в одном месте
         </h1>
-        <p class="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto">
+        <p class="text-lg text-gray-600 dark:text-gray-400 mb-6 max-w-xl mx-auto">
             SubTracker напомнит о продлении VPS, домена, облачного сервиса или любой подписки.
             Telegram-уведомления, REST API, экспорт. Бесплатно.
         </p>
+        @if($stats['users'] > 0)
+        <div class="flex items-center justify-center gap-4 mb-8 text-sm text-gray-500 dark:text-gray-400">
+            <span><strong class="text-gray-900 dark:text-white font-bold">{{ number_format($stats['users']) }}</strong> пользователей</span>
+            <span class="text-gray-300 dark:text-gray-600">·</span>
+            <span><strong class="text-gray-900 dark:text-white font-bold">{{ number_format($stats['services']) }}</strong> записей</span>
+        </div>
+        @endif
         <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            @if(config('app.register_enable'))
             <a href="{{ route('register') }}" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-lg shadow-lg shadow-blue-600/25 transition">
                 Начать бесплатно
             </a>
+            @endif
             <a href="{{ route('login') }}" class="px-8 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-xl font-semibold text-lg transition">
                 Войти
             </a>
@@ -77,6 +88,57 @@
                 <p class="text-sm text-gray-600 dark:text-gray-400">{{ $feat['desc'] }}</p>
             </div>
             @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- Comparison section --}}
+<section class="py-16 px-4">
+    <div class="max-w-5xl mx-auto">
+        <h2 class="text-2xl font-bold text-center mb-3">Не таблицы в Excel</h2>
+        <p class="text-center text-gray-500 dark:text-gray-400 mb-12 max-w-lg mx-auto">
+            Ручной учёт в таблицах неудобен — нет уведомлений, нет мобильной версии, легко забыть обновить
+        </p>
+        <div class="grid sm:grid-cols-2 gap-6 lg:gap-10">
+
+            {{-- "Before" --}}
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-lg font-semibold text-gray-400">Раньше</span>
+                    <span class="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 px-2 py-0.5 rounded-full">Google Таблицы / Excel</span>
+                </div>
+                {{-- Image placeholder — замените src на реальный скриншот --}}
+                <div id="comparison-before" class="aspect-video bg-gray-100 dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center">
+                    <span class="text-sm text-gray-400">Скриншот здесь</span>
+                </div>
+                <ul class="mt-5 space-y-2.5 text-sm text-gray-500 dark:text-gray-400">
+                    <li class="flex items-center gap-2"><span class="text-red-400 font-bold">✕</span> Нет уведомлений — легко пропустить</li>
+                    <li class="flex items-center gap-2"><span class="text-red-400 font-bold">✕</span> Обновлять вручную каждый раз</li>
+                    <li class="flex items-center gap-2"><span class="text-red-400 font-bold">✕</span> Неудобно с телефона</li>
+                    <li class="flex items-center gap-2"><span class="text-red-400 font-bold">✕</span> Нет истории платежей и аналитики</li>
+                    <li class="flex items-center gap-2"><span class="text-red-400 font-bold">✕</span> Пароли и данные в открытом виде</li>
+                </ul>
+            </div>
+
+            {{-- "After" --}}
+            <div>
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-lg font-semibold text-blue-600 dark:text-blue-400">SubTracker</span>
+                    <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-2 py-0.5 rounded-full">Умный трекер</span>
+                </div>
+                {{-- Image placeholder — замените src на реальный скриншот --}}
+                <div id="comparison-after" class="aspect-video bg-blue-50 dark:bg-blue-900/10 rounded-xl border-2 border-blue-200 dark:border-blue-800 overflow-hidden flex items-center justify-center">
+                    <span class="text-sm text-blue-400">Скриншот здесь</span>
+                </div>
+                <ul class="mt-5 space-y-2.5 text-sm text-gray-700 dark:text-gray-300">
+                    <li class="flex items-center gap-2"><span class="text-green-500 font-bold">✓</span> Telegram-уведомления за 1–30 дней</li>
+                    <li class="flex items-center gap-2"><span class="text-green-500 font-bold">✓</span> Продление в один клик — даже в боте</li>
+                    <li class="flex items-center gap-2"><span class="text-green-500 font-bold">✓</span> Удобно на телефоне и планшете</li>
+                    <li class="flex items-center gap-2"><span class="text-green-500 font-bold">✓</span> История, аналитика расходов, экспорт</li>
+                    <li class="flex items-center gap-2"><span class="text-green-500 font-bold">✓</span> Заметки с шифрованием AES-256</li>
+                </ul>
+            </div>
+
         </div>
     </div>
 </section>

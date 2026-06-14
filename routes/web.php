@@ -22,7 +22,13 @@ use Illuminate\Support\Facades\Route;
 // Landing
 Route::get('/', function () {
     $presets = \App\Models\CatalogPreset::where('is_active', true)->orderBy('sort_order')->get();
-    return view('landing.index', compact('presets'));
+    $stats = \Illuminate\Support\Facades\Cache::remember('landing_stats', 6 * 3600, function () {
+        return [
+            'users'    => \App\Models\User::count(),
+            'services' => \App\Models\Service::count(),
+        ];
+    });
+    return view('landing.index', compact('presets', 'stats'));
 })->name('home');
 
 // Auth
@@ -37,6 +43,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 // Authenticated routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::patch('/dashboard/currency', [DashboardController::class, 'updateCurrency'])->name('dashboard.currency');
 
     // Settings
     Route::get('/dashboard/settings', [SettingsController::class, 'index'])->name('settings');

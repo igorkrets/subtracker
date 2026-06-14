@@ -43,7 +43,9 @@ class ApiController extends Controller
 
         if ($request->filled('group_id')) $query->where('group_id', $request->group_id);
         if ($request->filled('expiring_in_days')) {
-            $query->where('expires_at', '<=', now()->addDays((int)$request->expiring_in_days));
+            $d = max(1, min((int) $request->expiring_in_days, 365));
+            $query->where('expires_at', '>=', today())
+                  ->where('expires_at', '<=', today()->addDays($d));
         }
 
         $sort = $request->get('sort', 'expires_asc');
@@ -86,14 +88,18 @@ class ApiController extends Controller
         return $this->ok(['deleted' => true]);
     }
 
-    public function expiringServices()
+    public function expiringServices(Request $request)
     {
+        $days = max(1, min((int) $request->input('days', 30), 365));
+
         $services = Auth::user()->services()
             ->whereNotNull('expires_at')
-            ->where('expires_at', '<=', now()->addDays(30))
+            ->where('expires_at', '>=', today())
+            ->where('expires_at', '<=', today()->addDays($days))
             ->orderBy('expires_at')
             ->get()
             ->map(fn($s) => $this->serviceArray($s));
+
         return $this->ok($services, count($services));
     }
 

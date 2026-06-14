@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Group;
 use App\Models\Service;
+use App\Services\ExchangeRateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -69,8 +70,12 @@ class DashboardController extends Controller
             'total' => $user->services()->count(),
         ];
 
+        // Refresh exchange rates in background (cached 6h, triggered by any visit)
+        $rates = ExchangeRateService::getRates();
+
         // Spend analytics
-        $spendStats = $this->calculateSpend($user);
+        $displayCurrency = $user->display_currency ?? 'RUB';
+        $spendStats = $this->calculateSpend($user, $displayCurrency, $rates);
 
         // Mode: grouped or flat
         $mode = $request->get('mode', 'grouped');
@@ -81,12 +86,27 @@ class DashboardController extends Controller
             $groupedServices = $this->getGroupedServices($user, $services->items());
         }
 
+        // Per-group monthly spend in display currency (all services, not paginated)
+        $groupSpend = $this->calculateGroupSpend($user, $displayCurrency, $rates);
+
+        $currencies = ExchangeRateService::CURRENCIES;
+
         return view('dashboard.index', compact(
-            'services', 'groups', 'stats', 'spendStats', 'mode', 'groupedServices'
+            'services', 'groups', 'stats', 'spendStats', 'mode', 'groupedServices',
+            'displayCurrency', 'currencies', 'groupSpend'
         ));
     }
 
-    private function calculateSpend($user): array
+    public function updateCurrency(Request $request)
+    {
+        $data = $request->validate([
+            'currency' => ['required', 'string', 'size:3', 'in:' . implode(',', ExchangeRateService::CURRENCIES)],
+        ]);
+        Auth::user()->update(['display_currency' => $data['currency']]);
+        return response()->json(['success' => true]);
+    }
+
+    private function calculateSpend($user, string $displayCurrency, array $rates): array
     {
         $services = $user->services()
             ->whereNotNull('cost')
@@ -94,24 +114,63 @@ class DashboardController extends Controller
             ->where('billing_cycle', '!=', 'one_time')
             ->get();
 
-        $monthly = [];
-        $yearly = [];
+        $totalMonthly = 0.0;
+        $byCurrency   = [];
 
         foreach ($services as $s) {
-            $currency = $s->currency;
-            $monthlyAmount = match ($s->billing_cycle) {
-                'monthly' => $s->cost,
-                'quarterly' => $s->cost / 3,
-                'semiannual' => $s->cost / 6,
-                'yearly' => $s->cost / 12,
-                'custom' => $s->billing_interval_days ? $s->cost / ($s->billing_interval_days / 30) : 0,
+            $nativeCurrency = $s->currency ?? 'RUB';
+            $monthlyNative  = match ($s->billing_cycle) {
+                'monthly'    => (float) $s->cost,
+                'quarterly'  => (float) $s->cost / 3,
+                'semiannual' => (float) $s->cost / 6,
+                'yearly'     => (float) $s->cost / 12,
+                'custom'     => $s->billing_interval_days
+                    ? (float) $s->cost / ($s->billing_interval_days / 30)
+                    : 0,
                 default => 0,
             };
-            $monthly[$currency] = ($monthly[$currency] ?? 0) + $monthlyAmount;
-            $yearly[$currency] = ($yearly[$currency] ?? 0) + ($monthlyAmount * 12);
+
+            // Keep native breakdown (for tooltip / info)
+            $byCurrency[$nativeCurrency] = ($byCurrency[$nativeCurrency] ?? 0) + $monthlyNative;
+
+            // Convert to display currency for total
+            $totalMonthly += ExchangeRateService::convert($monthlyNative, $nativeCurrency, $displayCurrency, $rates);
         }
 
-        return ['monthly' => $monthly, 'yearly' => $yearly];
+        return [
+            'total_monthly'    => $totalMonthly,
+            'total_yearly'     => $totalMonthly * 12,
+            'display_currency' => $displayCurrency,
+            'by_currency'      => $byCurrency,   // native breakdown, for info
+        ];
+    }
+
+    private function calculateGroupSpend($user, string $displayCurrency, array $rates): array
+    {
+        $rows = $user->services()
+            ->whereNotNull('cost')
+            ->whereNotNull('billing_cycle')
+            ->where('billing_cycle', '!=', 'one_time')
+            ->get(['group_id', 'cost', 'currency', 'billing_cycle', 'billing_interval_days']);
+
+        $spend = [];
+        foreach ($rows as $s) {
+            $key = $s->group_id ?? 'null';
+            $monthly = match ($s->billing_cycle) {
+                'monthly'    => (float) $s->cost,
+                'quarterly'  => (float) $s->cost / 3,
+                'semiannual' => (float) $s->cost / 6,
+                'yearly'     => (float) $s->cost / 12,
+                'custom'     => $s->billing_interval_days
+                    ? (float) $s->cost / ($s->billing_interval_days / 30)
+                    : 0,
+                default => 0,
+            };
+            $spend[$key] = ($spend[$key] ?? 0.0)
+                + ExchangeRateService::convert($monthly, $s->currency ?? 'RUB', $displayCurrency, $rates);
+        }
+
+        return $spend;
     }
 
     private function getGroupedServices($user, array $services): array
@@ -134,7 +193,7 @@ class DashboardController extends Controller
             $grouped[$groupId]['services'][] = $service;
         }
 
-        // Remove empty groups (except null)
-        return array_filter($grouped, fn($g) => !empty($g['services']) || $g['group'] === null);
+        // Show all named groups (even empty), hide "Без группы" if it has no services
+        return array_filter($grouped, fn($g) => $g['group'] !== null || !empty($g['services']));
     }
 }

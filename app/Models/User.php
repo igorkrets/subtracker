@@ -15,7 +15,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'email', 'password',
         'api_token', 'tg_chat_id', 'tg_code', 'tg_connected_at',
-        'is_blocked', 'is_admin', 'timezone', 'default_currency',
+        'is_blocked', 'is_admin', 'timezone', 'default_currency', 'display_currency',
     ];
 
     protected $hidden = ['password', 'remember_token', 'api_token'];

@@ -17,8 +17,9 @@
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <form method="POST" action="{{ route('register') }}">
+        <form method="POST" action="{{ route('register') }}" id="register-form">
             @csrf
+            <input type="hidden" name="timezone" id="reg-timezone" value="{{ old('timezone', 'UTC') }}">
             <div class="space-y-4">
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Имя</label>
@@ -53,5 +54,13 @@
         Уже есть аккаунт? <a href="{{ route('login') }}" class="text-blue-600 hover:underline">Войти</a>
     </p>
 </div>
+<script>
+(function () {
+    try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz) document.getElementById('reg-timezone').value = tz;
+    } catch(e) {}
+}());
+</script>
 </body>
 </html>
