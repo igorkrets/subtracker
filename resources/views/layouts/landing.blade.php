@@ -24,7 +24,7 @@
                 <x-icon icon="sun" icon-set="lucide" class="w-5 h-5 hidden dark:block" />
             </button>
             <a href="{{ route('login') }}" class="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">Войти</a>
-            <a href="{{ route('register') }}" class="text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg transition">Начать бесплатно</a>
+            <a href="{{ route('register') }}" class="text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg transition">Начать</a>
         </div>
     </div>
 </nav>

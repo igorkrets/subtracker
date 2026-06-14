@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Дашборд')
+@section('title', 'Подписки')
 
 @section('content')
 <h1 class="text-xl font-semibold mb-6">Обзор системы</h1>

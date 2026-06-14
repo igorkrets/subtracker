@@ -93,9 +93,15 @@
 
             {{-- Current status --}}
             <div class="mb-4">
-                <div x-show="localPwd" class="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
-                    <x-icon icon="check-circle" icon-set="lucide" class="w-4 h-4" />
-                    Пароль задан в этом браузере
+                <div x-show="localPwd" class="space-y-2">
+                    <div class="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
+                        <x-icon icon="check-circle" icon-set="lucide" class="w-4 h-4 flex-shrink-0" />
+                        Пароль задан в этом браузере
+                    </div>
+                    <div class="flex gap-2 text-sm text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-2.5">
+                        <x-icon icon="alert-triangle" icon-set="lucide" class="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>Если смените пароль, вы потеряете доступ к зашифрованным заметкам, созданным со старым паролем. Убедитесь, что помните текущий пароль или записали его в надёжном месте.</span>
+                    </div>
                 </div>
                 <div x-show="!localPwd" class="flex items-center gap-2 text-gray-400 text-sm">
                     <x-icon icon="circle" icon-set="lucide" class="w-4 h-4" />

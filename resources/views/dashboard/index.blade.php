@@ -1,5 +1,5 @@
 <x-app-layout>
-<x-slot name="title">Дашборд</x-slot>
+<x-slot name="title">Подписки</x-slot>
 
 <div x-data="dashboard()" x-init="init()">
 
@@ -525,6 +525,202 @@
     </div>
 </div>
 
+{{-- View Service Modal --}}
+<div x-show="showViewModal" x-transition.opacity
+     class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50"
+     @keydown.escape.window="showViewModal = false">
+    <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-lg max-h-[90vh] flex flex-col"
+         @click.outside="showViewModal = false" role="dialog">
+
+        {{-- Header: icon + name + action buttons --}}
+        <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+            {{-- Service icon --}}
+            <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center"
+                 :style="viewingService?.color ? 'background-color:' + viewingService.color + '22' : 'background-color:#64748b22'">
+                <div x-html="viewIconHtml" :style="'color:' + (viewingService?.color || '#64748b')" class="w-5 h-5 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full"></div>
+            </div>
+
+            {{-- Name (click to edit) --}}
+            <div class="flex-1 min-w-0">
+                <h2 class="font-semibold text-base truncate" x-text="viewingService?.name"></h2>
+                <button @click="showViewModal = false; $nextTick(() => editService(viewingService.id))"
+                    class="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-0.5">
+                    <x-icon icon="edit-2" icon-set="lucide" class="w-3 h-3" />
+                    Редактировать
+                </button>
+            </div>
+
+            {{-- Action buttons --}}
+            <div class="flex items-center gap-1 flex-shrink-0">
+                <button @click="showViewModal = false; $nextTick(() => editService(viewingService.id))"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-blue-600 transition-colors"
+                    title="Редактировать">
+                    <x-icon icon="edit-2" icon-set="lucide" class="w-4 h-4" />
+                </button>
+                <button @click="apiFetch(`/services/${viewingService.id}/toggle-notifications`, 'PATCH'); viewingService.notifications_enabled = !viewingService.notifications_enabled"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    :class="viewingService?.notifications_enabled ? 'text-blue-500' : 'text-gray-300'"
+                    title="Уведомления">
+                    <x-icon icon="bell" icon-set="lucide" class="w-4 h-4" />
+                </button>
+                <button @click="showViewModal = false"
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Закрыть">
+                    <x-icon icon="x" icon-set="lucide" class="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+
+        {{-- Body: service details --}}
+        <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+
+            {{-- Status badge + expires --}}
+            <template x-if="viewingService?.expires_at">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs px-2 py-1 rounded-lg font-medium"
+                          :class="{
+                            'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300': viewDaysLeft < 0,
+                            'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300': viewDaysLeft >= 0 && viewDaysLeft <= 3,
+                            'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300': viewDaysLeft > 3 && viewDaysLeft <= 14,
+                            'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': viewDaysLeft > 14,
+                          }">
+                        <span x-text="viewDaysLeft < 0 ? 'Просрочено ' + Math.abs(viewDaysLeft) + ' дн.' : (viewDaysLeft === 0 ? 'Истекает сегодня' : 'Осталось ' + viewDaysLeft + ' дн.')"></span>
+                    </span>
+                    <span class="text-sm text-gray-500" x-text="viewingService.expires_at ? new Date(viewingService.expires_at).toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric'}) : ''"></span>
+                </div>
+            </template>
+
+            {{-- Details rows --}}
+            <dl class="space-y-2.5 text-sm">
+                <template x-if="viewingService?.ip">
+                    <div class="flex items-start gap-3">
+                        <dt class="w-28 flex-shrink-0 text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                            <x-icon icon="monitor" icon-set="lucide" class="w-3.5 h-3.5" />IP-адрес
+                        </dt>
+                        <dd class="flex-1 font-mono text-gray-800 dark:text-gray-200 break-all" x-text="viewingService.ip"></dd>
+                    </div>
+                </template>
+                <template x-if="viewingService?.url">
+                    <div class="flex items-start gap-3">
+                        <dt class="w-28 flex-shrink-0 text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                            <x-icon icon="link" icon-set="lucide" class="w-3.5 h-3.5" />URL
+                        </dt>
+                        <dd class="flex-1 break-all">
+                            <a :href="viewingService.url" target="_blank" x-text="viewingService.url"
+                               class="text-blue-600 dark:text-blue-400 hover:underline"></a>
+                        </dd>
+                    </div>
+                </template>
+                <template x-if="viewingService?.provider_name">
+                    <div class="flex items-start gap-3">
+                        <dt class="w-28 flex-shrink-0 text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                            <x-icon icon="building-2" icon-set="lucide" class="w-3.5 h-3.5" />Провайдер
+                        </dt>
+                        <dd class="flex-1 text-gray-800 dark:text-gray-200">
+                            <template x-if="viewingService.provider_url">
+                                <a :href="viewingService.provider_url" target="_blank" x-text="viewingService.provider_name"
+                                   class="text-blue-600 dark:text-blue-400 hover:underline"></a>
+                            </template>
+                            <template x-if="!viewingService.provider_url">
+                                <span x-text="viewingService.provider_name"></span>
+                            </template>
+                        </dd>
+                    </div>
+                </template>
+                <template x-if="viewingService?.cost">
+                    <div class="flex items-start gap-3">
+                        <dt class="w-28 flex-shrink-0 text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                            <x-icon icon="credit-card" icon-set="lucide" class="w-3.5 h-3.5" />Стоимость
+                        </dt>
+                        <dd class="flex-1 text-gray-800 dark:text-gray-200">
+                            <span x-text="viewingService.cost + ' ' + (viewingService.currency || '')"></span>
+                            <span x-show="viewingService.billing_cycle" class="text-gray-400 ml-1 text-xs"
+                                  x-text="({monthly:'/ мес',quarterly:'/ квартал',semiannual:'/ полгода',yearly:'/ год',one_time:'разово'}[viewingService.billing_cycle] || '')"></span>
+                        </dd>
+                    </div>
+                </template>
+                <template x-if="viewingService?.group_name">
+                    <div class="flex items-start gap-3">
+                        <dt class="w-28 flex-shrink-0 text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                            <x-icon icon="folder" icon-set="lucide" class="w-3.5 h-3.5" />Группа
+                        </dt>
+                        <dd class="flex-1 text-gray-800 dark:text-gray-200" x-text="viewingService.group_name"></dd>
+                    </div>
+                </template>
+                <template x-if="viewingService?.notes">
+                    <div class="flex items-start gap-3">
+                        <dt class="w-28 flex-shrink-0 text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+                            <x-icon icon="file-text" icon-set="lucide" class="w-3.5 h-3.5" />Заметка
+                        </dt>
+                        <dd class="flex-1 text-gray-800 dark:text-gray-200 whitespace-pre-wrap text-xs" x-text="viewingService.notes"></dd>
+                    </div>
+                </template>
+                <template x-if="viewingService?.encrypted_notes">
+                    <div class="flex items-start gap-3">
+                        <dt class="w-28 flex-shrink-0 text-gray-400 dark:text-gray-500 flex items-center gap-1.5 pt-0.5">
+                            <x-icon icon="lock" icon-set="lucide" class="w-3.5 h-3.5" />Заметка (шифр.)
+                        </dt>
+                        <dd class="flex-1 text-xs">
+                            {{-- Decrypted successfully --}}
+                            <template x-if="viewEncNote.plain && !viewEncNote.wrongPwd">
+                                <p class="text-gray-800 dark:text-gray-200 whitespace-pre-wrap" x-text="viewEncNote.plain"></p>
+                            </template>
+                            {{-- Wrong password / no local pwd --}}
+                            <template x-if="!viewEncNote.plain">
+                                <div class="space-y-2">
+                                    <p class="text-gray-400 italic flex items-center gap-1.5">
+                                        <x-icon icon="lock" icon-set="lucide" class="w-3.5 h-3.5" />
+                                        <span x-text="viewEncNote.wrongPwd ? 'Неверный пароль' : 'Требуется локальный пароль'"></span>
+                                    </p>
+                                    <div x-show="!viewEncNote.showTempPwd">
+                                        <button @click="viewEncNote.showTempPwd = true"
+                                            class="text-blue-600 dark:text-blue-400 hover:underline text-xs">
+                                            Ввести пароль вручную
+                                        </button>
+                                    </div>
+                                    <div x-show="viewEncNote.showTempPwd" class="flex gap-2">
+                                        <input type="password" x-model="viewEncNote.tempPwd"
+                                            placeholder="Локальный пароль"
+                                            @keydown.enter="(async () => {
+                                                try {
+                                                    viewEncNote.plain = await window.SubCrypto.decrypt(viewingService.encrypted_notes, viewEncNote.tempPwd);
+                                                    viewEncNote.wrongPwd = false;
+                                                    viewEncNote.showTempPwd = false;
+                                                    viewEncNote.tempPwd = '';
+                                                } catch { viewEncNote.wrongPwd = true; viewEncNote.plain = ''; }
+                                            })()"
+                                            class="flex-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <button @click="(async () => {
+                                                try {
+                                                    viewEncNote.plain = await window.SubCrypto.decrypt(viewingService.encrypted_notes, viewEncNote.tempPwd);
+                                                    viewEncNote.wrongPwd = false;
+                                                    viewEncNote.showTempPwd = false;
+                                                    viewEncNote.tempPwd = '';
+                                                } catch { viewEncNote.wrongPwd = true; viewEncNote.plain = ''; }
+                                            })()"
+                                            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">
+                                            Расшифровать
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </dd>
+                    </div>
+                </template>
+            </dl>
+        </div>
+
+        {{-- Footer: delete --}}
+        <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700">
+            <button @click="showViewModal = false; deleteService(viewingService.id)"
+                class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                <x-icon icon="trash-2" icon-set="lucide" class="w-4 h-4" />
+                Удалить сервис
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- Group Modal --}}
 <div x-show="showGroupModal" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
     @keydown.escape.window="showGroupModal = false">
@@ -631,15 +827,20 @@ function dashboard() {
         showServiceModal: false,
         showGroupModal: false,
         showRenewModal: false,
+        showViewModal: false,
         editingService: null,
         editingGroup: null,
         renewingService: null,
+        viewingService: null,
+        viewIconHtml: '',
+        viewDaysLeft: null,
         renewMonths: '',
         renewDate: '',
         renewRecordPayment: true,
         saving: false,
         localPwd: null,
         encNote: { plain: '', wrongPwd: false, showTempPwd: false, tempPwd: '' },
+        viewEncNote: { plain: '', wrongPwd: false, showTempPwd: false, tempPwd: '' },
         iconPreviewHtml: '',
         form: {
             name: '', url: '', ip: '', group_id: '', type_slug: '',
@@ -781,6 +982,32 @@ function dashboard() {
             } catch {
                 showToast('Неверный пароль', 'error');
             }
+        },
+
+        async viewService(serviceId) {
+            const row = document.querySelector(`.service-row[data-id="${serviceId}"]`);
+            if (!row) return;
+            const data = JSON.parse(row.dataset.service || '{}');
+            data.id = parseInt(serviceId);
+            if (data.expires_at) {
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const exp = new Date(data.expires_at + 'T00:00:00');
+                this.viewDaysLeft = Math.round((exp - today) / 86400000);
+            } else {
+                this.viewDaysLeft = null;
+            }
+            const iconWrap = row.querySelector('div.rounded-lg');
+            this.viewIconHtml = iconWrap ? iconWrap.innerHTML : '';
+            this.viewEncNote = { plain: '', wrongPwd: false, showTempPwd: false, tempPwd: '' };
+            if (data.encrypted_notes && this.localPwd) {
+                try {
+                    this.viewEncNote.plain = await window.SubCrypto.decrypt(data.encrypted_notes, this.localPwd);
+                } catch {
+                    this.viewEncNote.wrongPwd = true;
+                }
+            }
+            this.viewingService = data;
+            this.showViewModal = true;
         },
 
         editGroup(id, name, color) {

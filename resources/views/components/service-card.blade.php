@@ -14,7 +14,7 @@ $daysBadge = $daysLeft !== null
 @endphp
 <div class="service-row flex items-center gap-2 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 group/row"
     data-id="{{ $service->id }}"
-    data-service="{{ json_encode(['name' => $service->name, 'url' => $service->url, 'ip' => $service->ip, 'group_id' => $service->group_id, 'type_slug' => $service->type_slug, 'expires_at' => $service->expires_at?->toDateString(), 'billing_cycle' => $service->billing_cycle, 'cost' => $service->cost, 'currency' => $service->currency, 'provider_name' => $service->provider_name, 'provider_url' => $service->provider_url, 'notes' => $service->notes, 'encrypted_notes' => $service->encrypted_notes, 'notifications_enabled' => $service->notifications_enabled, 'auto_renew' => $service->auto_renew, 'icon' => $service->icon, 'icon_set' => $service->icon_set ?? 'lucide', 'color' => $service->color]) }}">
+    data-service="{{ json_encode(['name' => $service->name, 'url' => $service->url, 'ip' => $service->ip, 'group_id' => $service->group_id, 'group_name' => $service->group?->name, 'type_slug' => $service->type_slug, 'expires_at' => $service->expires_at?->toDateString(), 'billing_cycle' => $service->billing_cycle, 'cost' => $service->cost, 'currency' => $service->currency, 'provider_name' => $service->provider_name, 'provider_url' => $service->provider_url, 'notes' => $service->notes, 'encrypted_notes' => $service->encrypted_notes, 'notifications_enabled' => $service->notifications_enabled, 'auto_renew' => $service->auto_renew, 'icon' => $service->icon, 'icon_set' => $service->icon_set ?? 'lucide', 'color' => $service->color]) }}">
 
     {{-- Drag handle: desktop only --}}
     <x-icon icon="grip-vertical" icon-set="lucide" class="hidden sm:block w-4 h-4 text-gray-300 dark:text-gray-600 cursor-grab service-drag-handle sm:opacity-0 sm:group-hover/row:opacity-100 flex-shrink-0" />
@@ -86,6 +86,13 @@ $daysBadge = $daysLeft !== null
         @endif
     </div>
 
+    {{-- View button: desktop only --}}
+    <button @click="viewService({{ $service->id }})"
+        class="hidden sm:block p-1.5 rounded sm:opacity-0 sm:group-hover/row:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0"
+        aria-label="Просмотр">
+        <x-icon icon="eye" icon-set="lucide" class="w-4 h-4 text-gray-400" />
+    </button>
+
     {{-- Notifications toggle: desktop only --}}
     <button @click="toggleServiceNotifications({{ $service->id }})"
         class="hidden sm:block p-1.5 rounded sm:opacity-0 sm:group-hover/row:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0"
@@ -102,6 +109,9 @@ $daysBadge = $daysLeft !== null
         </button>
         <div x-show="open" @click.outside="open = false" x-transition
             class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-30 text-sm overflow-hidden">
+            <button @click="open=false; viewService({{ $service->id }})" class="flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left">
+                <x-icon icon="eye" icon-set="lucide" class="w-4 h-4 text-gray-400" /> Просмотр
+            </button>
             <button @click="open=false; editService({{ $service->id }})" class="flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left">
                 <x-icon icon="edit-2" icon-set="lucide" class="w-4 h-4 text-gray-400" /> Редактировать
             </button>
