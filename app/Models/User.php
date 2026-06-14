@@ -2,31 +2,57 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    protected $fillable = [
+        'name', 'email', 'password',
+        'api_token', 'tg_chat_id', 'tg_code', 'tg_connected_at',
+        'is_blocked', 'is_admin', 'timezone', 'default_currency',
+    ];
+
+    protected $hidden = ['password', 'remember_token', 'api_token'];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'tg_connected_at' => 'datetime',
             'password' => 'hashed',
+            'is_blocked' => 'boolean',
+            'is_admin' => 'boolean',
         ];
+    }
+
+    public function services()
+    {
+        return $this->hasMany(Service::class);
+    }
+
+    public function groups()
+    {
+        return $this->hasMany(Group::class);
+    }
+
+    public function webhooks()
+    {
+        return $this->hasMany(Webhook::class);
+    }
+
+    public function notificationRules()
+    {
+        return $this->hasMany(NotificationRule::class);
+    }
+
+    public function servicePayments()
+    {
+        return $this->hasMany(ServicePayment::class);
     }
 }
