@@ -84,8 +84,10 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/notifications/{rule}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     // API docs
-    Route::get('/api/docs', fn() => view('api-docs'))->name('api.docs');
 });
+
+// Public API docs (no auth required)
+Route::get('/api/docs', fn() => view('api-docs'))->name('api.docs');
 
 // Admin routes
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {

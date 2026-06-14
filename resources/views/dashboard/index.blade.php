@@ -78,7 +78,7 @@
         </a>
     </div>
     {{-- Actions --}}
-    <button @click="showServiceModal = true; editingService = null"
+    <button @click="resetForm(); editingService = null; showServiceModal = true"
         class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
         <x-icon icon="plus" icon-set="lucide" class="w-4 h-4" /> Сервис
     </button>
@@ -130,7 +130,7 @@
         @endif
     </h3>
     @if(!request('q'))
-    <button @click="showServiceModal = true" class="mt-4 bg-blue-600 text-white text-sm px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+    <button @click="resetForm(); editingService = null; showServiceModal = true" class="mt-4 bg-blue-600 text-white text-sm px-6 py-2 rounded-lg hover:bg-blue-700 transition">
         Добавить сервис
     </button>
     @endif
@@ -148,7 +148,7 @@
 <div id="groups-container" class="space-y-3">
     @foreach($groupedServices as $groupId => $groupData)
     @php $group = $groupData['group']; $groupServices = $groupData['services']; @endphp
-    <div class="group-block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+    <div class="group-block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700"
         data-group-id="{{ $group?->id ?? 'null' }}"
         x-data="{ expanded: JSON.parse(localStorage.getItem('group_{{ $group?->id ?? 'null' }}') ?? 'true') }"
         x-init="$watch('expanded', v => localStorage.setItem('group_{{ $group?->id ?? 'null' }}', v))">
@@ -156,8 +156,10 @@
         {{-- Group header --}}
         <div class="flex items-center gap-2 px-4 py-3 cursor-pointer select-none" @click.self="expanded = !expanded">
             <x-icon icon="grip-vertical" icon-set="lucide" class="w-4 h-4 text-gray-400 drag-handle cursor-grab" />
-            <button @click="expanded = !expanded" class="flex items-center gap-1 text-sm" aria-expanded="expanded">
-                <x-icon icon="chevron-right" icon-set="lucide" class="w-4 h-4 transition-transform" :class="expanded ? 'rotate-90' : ''" />
+            <button @click="expanded = !expanded" class="flex items-center gap-1 text-sm" :aria-expanded="expanded">
+                <span :class="expanded ? 'rotate-90' : ''" class="inline-flex transition-transform">
+                    <x-icon icon="chevron-right" icon-set="lucide" class="w-4 h-4" />
+                </span>
             </button>
             @if($group)
                 <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {{ $group->color ?? '#94a3b8' }}"></span>
@@ -197,7 +199,7 @@
 <div x-show="showServiceModal" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
     @keydown.escape.window="showServiceModal = false">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        @click.outside="showServiceModal = false" role="dialog" aria-modal="true">
+        role="dialog" aria-modal="true">
         <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 class="font-semibold text-lg" x-text="editingService ? 'Редактировать сервис' : 'Добавить сервис'"></h2>
             <button @click="showServiceModal = false" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -206,15 +208,15 @@
         </div>
         <form @submit.prevent="saveService()" class="p-6 space-y-4">
             {{-- Autocomplete name --}}
-            <div x-data="catalogAutocomplete()" x-init="init()" class="relative">
+            <div class="relative">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название *</label>
-                <input type="text" x-model="$parent.form.name" @input="search()" @focus="search()"
+                <input type="text" x-model="form.name" @input="catalogSearch()" @focus="catalogSearch()"
                     placeholder="Начните вводить название..."
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <div x-show="results.length > 0" x-transition
+                <div x-show="catalogResults.length > 0" x-transition
                     class="absolute z-30 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-                    <template x-for="item in results" :key="item.slug">
-                        <button type="button" @click="select(item)"
+                    <template x-for="item in catalogResults" :key="item.slug">
+                        <button type="button" @click="catalogSelect(item)"
                             class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-left">
                             <img :src="item.icon_url" class="w-5 h-5 object-contain" onerror="this.style.display='none'" :alt="item.name">
                             <span x-text="item.name"></span>
@@ -505,10 +507,38 @@ function dashboard() {
             notifications_enabled: true, auto_renew: false,
         },
         groupForm: { name: '', color: '#2563EB' },
+        catalogResults: [],
+        _catalogFuse: null,
 
-        init() {
+        async init() {
             this.localPwd = window.SubCrypto.getPassword();
             this.initSortable();
+            try {
+                const res = await fetch('/catalog.json');
+                const data = await res.json();
+                this._catalogFuse = new Fuse(data.presets || [], {
+                    keys: ['name', 'aliases'],
+                    threshold: 0.3,
+                    ignoreLocation: true,
+                    minMatchCharLength: 2,
+                });
+            } catch(e) {}
+        },
+
+        catalogSearch() {
+            const q = this.form.name;
+            if (!this._catalogFuse || q.length < 2) { this.catalogResults = []; return; }
+            this.catalogResults = this._catalogFuse.search(q).slice(0, 8).map(r => r.item);
+        },
+
+        catalogSelect(item) {
+            this.form.name = item.name;
+            if (item.type_slug) this.form.type_slug = item.type_slug;
+            if (item.default_url) this.form.provider_url = item.default_url;
+            if (item.color) this.form.color = item.color;
+            if (item.icon) this.form.icon = item.icon;
+            if (item.icon_set) this.form.icon_set = item.icon_set;
+            this.catalogResults = [];
         },
 
         initSortable() {
@@ -546,6 +576,7 @@ function dashboard() {
                 billing_cycle: '', cost: '', currency: 'RUB', provider_name: '', provider_url: '',
                 notes: '', encrypted_notes: null, notifications_enabled: true, auto_renew: false };
             this.encNote = { plain: '', wrongPwd: false, showTempPwd: false, tempPwd: '' };
+            this.catalogResults = [];
         },
 
         async editService(serviceId) {
@@ -691,41 +722,6 @@ function dashboard() {
     };
 }
 
-function catalogAutocomplete() {
-    return {
-        results: [],
-        catalog: null,
-        fuse: null,
-        async init() {
-            try {
-                const res = await fetch('/catalog.json');
-                const data = await res.json();
-                this.catalog = data;
-                this.fuse = new Fuse(data.presets || [], {
-                    keys: ['name', 'aliases'],
-                    threshold: 0.3,
-                    ignoreLocation: true,
-                    minMatchCharLength: 2,
-                });
-            } catch(e) {}
-        },
-        search() {
-            const q = this.$parent.form.name;
-            if (!this.fuse || q.length < 2) { this.results = []; return; }
-            this.results = this.fuse.search(q).slice(0, 8).map(r => r.item);
-        },
-        select(item) {
-            const parent = this.$parent;
-            parent.form.name = item.name;
-            if (item.type_slug) parent.form.type_slug = item.type_slug;
-            if (item.default_url) parent.form.provider_url = item.default_url;
-            if (item.color) parent.form.color = item.color;
-            if (item.icon) parent.form.icon = item.icon;
-            if (item.icon_set) parent.form.icon_set = item.icon_set;
-            this.results = [];
-        }
-    };
-}
 </script>
 @endpush
 

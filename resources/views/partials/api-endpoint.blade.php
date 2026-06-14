@@ -12,7 +12,7 @@ $methodColors = [
         <span class="text-xs font-bold font-mono px-2 py-1 rounded {{ $methodColors[$method] ?? '' }}">{{ $method }}</span>
         <code class="text-sm font-mono text-gray-800 dark:text-gray-200">{{ $path }}</code>
         <span class="text-xs text-gray-500 ml-2">{{ $desc }}</span>
-        <x-icon icon="chevron-down" icon-set="lucide" class="w-4 h-4 text-gray-400 ml-auto transition-transform" :class="open ? 'rotate-180' : ''" />
+        <x-icon icon="chevron-down" icon-set="lucide" class="w-4 h-4 text-gray-400 ml-auto transition-transform" x-bind:class="open ? 'rotate-180' : ''"/>
     </div>
     <div x-show="open" class="border-t border-gray-200 dark:border-gray-700 p-4 space-y-4">
         @if(!empty($params))
