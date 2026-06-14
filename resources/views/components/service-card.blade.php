@@ -12,7 +12,7 @@ $daysLeft = $service->days_left;
 @endphp
 <div class="service-row flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 group/row"
     data-id="{{ $service->id }}"
-    data-service="{{ json_encode(['name' => $service->name, 'url' => $service->url, 'ip' => $service->ip, 'group_id' => $service->group_id, 'type_slug' => $service->type_slug, 'expires_at' => $service->expires_at?->toDateString(), 'billing_cycle' => $service->billing_cycle, 'cost' => $service->cost, 'currency' => $service->currency, 'provider_name' => $service->provider_name, 'provider_url' => $service->provider_url, 'notes' => $service->notes, 'notifications_enabled' => $service->notifications_enabled, 'auto_renew' => $service->auto_renew]) }}">
+    data-service="{{ json_encode(['name' => $service->name, 'url' => $service->url, 'ip' => $service->ip, 'group_id' => $service->group_id, 'type_slug' => $service->type_slug, 'expires_at' => $service->expires_at?->toDateString(), 'billing_cycle' => $service->billing_cycle, 'cost' => $service->cost, 'currency' => $service->currency, 'provider_name' => $service->provider_name, 'provider_url' => $service->provider_url, 'notes' => $service->notes, 'encrypted_notes' => $service->encrypted_notes, 'notifications_enabled' => $service->notifications_enabled, 'auto_renew' => $service->auto_renew]) }}">
 
     {{-- Drag handle --}}
     <x-icon icon="grip-vertical" icon-set="lucide" class="w-4 h-4 text-gray-300 dark:text-gray-600 cursor-grab service-drag-handle opacity-0 group-hover/row:opacity-100 flex-shrink-0" />

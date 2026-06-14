@@ -1,14 +1,14 @@
 <x-app-layout>
 <x-slot name="title">Настройки</x-slot>
 
-<div x-data="{ tab: '{{ request('tab', 'profile') }}' }">
+<div x-data="settingsPage()" x-init="init()">
     <h1 class="text-xl font-semibold mb-6">Настройки аккаунта</h1>
 
     {{-- Tabs --}}
-    <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
-        @foreach([['profile','Профиль'],['api','API'],['telegram','Telegram'],['notifications','Уведомления'],['webhooks','Вебхуки']] as [$key, $label])
+    <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
+        @foreach([['profile','Профиль'],['security','Безопасность'],['api','API'],['telegram','Telegram'],['notifications','Уведомления'],['webhooks','Вебхуки']] as [$key, $label])
         <button @click="tab = '{{ $key }}'" :class="tab === '{{ $key }}' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
-            class="px-4 py-2 text-sm font-medium transition -mb-px">{{ $label }}</button>
+            class="px-4 py-2 text-sm font-medium transition -mb-px whitespace-nowrap">{{ $label }}</button>
         @endforeach
     </div>
 
@@ -64,6 +64,91 @@
                 @error('password') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
                 <button type="submit" class="bg-gray-700 hover:bg-gray-800 text-white text-sm px-4 py-2 rounded-lg transition">Сменить пароль</button>
             </form>
+        </div>
+    </div>
+
+    {{-- Security / Local password --}}
+    <div x-show="tab === 'security'" class="max-w-lg space-y-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <h2 class="text-lg font-medium mb-1 flex items-center gap-2">
+                <x-icon icon="lock" icon-set="lucide" class="w-5 h-5 text-amber-500" />
+                Локальный пароль
+            </h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Используется для поля <strong>«Заметки (шифр)»</strong> в карточках сервисов.</p>
+
+            {{-- Info box --}}
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-200 mb-5 space-y-1.5">
+                <div class="flex gap-2"><x-icon icon="shield" icon-set="lucide" class="w-4 h-4 flex-shrink-0 mt-0.5" /><span>Пароль хранится <strong>только в этом браузере</strong> (localStorage). На сервер не передаётся.</span></div>
+                <div class="flex gap-2"><x-icon icon="eye-off" icon-set="lucide" class="w-4 h-4 flex-shrink-0 mt-0.5" /><span>На сервер отправляется только зашифрованный текст. Даже администратор не может его прочитать.</span></div>
+                <div class="flex gap-2"><x-icon icon="alert-triangle" icon-set="lucide" class="w-4 h-4 flex-shrink-0 mt-0.5" /><span><strong>Если потеряете пароль — данные не восстановить.</strong> Используйте надёжный пароль (12+ символов, цифры, спецсимволы).</span></div>
+                <div class="flex gap-2"><x-icon icon="monitor" icon-set="lucide" class="w-4 h-4 flex-shrink-0 mt-0.5" /><span>При смене браузера или устройства задайте этот же пароль повторно.</span></div>
+            </div>
+
+            {{-- Current status --}}
+            <div class="mb-4">
+                <div x-show="localPwd" class="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
+                    <x-icon icon="check-circle" icon-set="lucide" class="w-4 h-4" />
+                    Пароль задан в этом браузере
+                </div>
+                <div x-show="!localPwd" class="flex items-center gap-2 text-gray-400 text-sm">
+                    <x-icon icon="circle" icon-set="lucide" class="w-4 h-4" />
+                    Пароль не задан — шифрование заметок недоступно
+                </div>
+            </div>
+
+            {{-- Password input --}}
+            <div class="space-y-3">
+                <div class="relative">
+                    <input :type="showPwd ? 'text' : 'password'" x-model="newPwd"
+                        placeholder="Введите новый локальный пароль"
+                        @input="pwdStrength = window.SubCrypto.strength(newPwd)"
+                        class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    <button type="button" @click="showPwd = !showPwd"
+                        class="absolute right-2 top-2 p-1 text-gray-400 hover:text-gray-600">
+                        <x-icon icon="eye" icon-set="lucide" class="w-4 h-4" />
+                    </button>
+                </div>
+
+                {{-- Strength bar --}}
+                <div x-show="newPwd" class="space-y-1">
+                    <div class="flex gap-1">
+                        <template x-for="i in 4">
+                            <div class="h-1.5 flex-1 rounded-full transition-colors"
+                                :class="i <= pwdStrength
+                                    ? (pwdStrength <= 1 ? 'bg-red-500' : pwdStrength <= 2 ? 'bg-amber-500' : pwdStrength <= 3 ? 'bg-yellow-400' : 'bg-green-500')
+                                    : 'bg-gray-200 dark:bg-gray-700'">
+                            </div>
+                        </template>
+                    </div>
+                    <p class="text-xs" :class="{
+                        'text-red-600': pwdStrength <= 1,
+                        'text-amber-600': pwdStrength === 2,
+                        'text-yellow-600': pwdStrength === 3,
+                        'text-green-600': pwdStrength >= 4
+                    }" x-text="['', 'Слабый — легко подобрать', 'Средний', 'Хороший', 'Надёжный'][pwdStrength] || ''"></p>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="button" @click="saveLocalPwd()"
+                        :disabled="!newPwd"
+                        class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition">
+                        <span x-text="localPwd ? 'Изменить пароль' : 'Задать пароль'"></span>
+                    </button>
+                    <button type="button" @click="forgetLocalPwd()" x-show="localPwd"
+                        class="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50">
+                        Забыть пароль
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Encryption info --}}
+        <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+            <div class="font-medium text-gray-700 dark:text-gray-300 mb-1">Техническая информация</div>
+            <div>Алгоритм: <code>AES-256-GCM</code> (аутентифицированное шифрование)</div>
+            <div>Производная ключа: <code>PBKDF2-SHA256</code>, 310 000 итераций</div>
+            <div>Соль и IV: генерируются случайно для каждой записи</div>
+            <div>Шифрование и расшифровка выполняются только в вашем браузере (Web Crypto API)</div>
         </div>
     </div>
 
@@ -167,7 +252,7 @@
     </div>
 
     {{-- Webhooks --}}
-    <div x-show="tab === 'webhooks'" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 max-w-2xl" x-data="webhooksTab()">
+    <div x-show="tab === 'webhooks'" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 max-w-2xl">
         <h2 class="text-lg font-medium mb-4">Вебхуки</h2>
         <div class="space-y-3 mb-4">
             @forelse($webhooks as $wh)
@@ -204,10 +289,41 @@
 
 @push('scripts')
 <script>
-function webhooksTab() {
+function settingsPage() {
     return {
+        tab: '{{ request('tab', 'profile') }}',
+        // Local password (security tab)
+        localPwd: null,
+        newPwd: '',
+        showPwd: false,
+        pwdStrength: 0,
+        // Webhooks tab
         showForm: false,
         whForm: { name: '', url: '', secret: '', is_active: true },
+
+        init() {
+            this.localPwd = window.SubCrypto.getPassword();
+        },
+
+        saveLocalPwd() {
+            if (!this.newPwd) return;
+            if (this.pwdStrength < 2) {
+                if (!confirm('Пароль слабый — его легко подобрать. Продолжить?')) return;
+            }
+            window.SubCrypto.setPassword(this.newPwd);
+            this.localPwd = this.newPwd;
+            this.newPwd = '';
+            this.pwdStrength = 0;
+            showToast('Локальный пароль сохранён в браузере');
+        },
+
+        forgetLocalPwd() {
+            if (!confirm('Вы не сможете расшифровать зашифрованные заметки без этого пароля. Забыть?')) return;
+            window.SubCrypto.setPassword(null);
+            this.localPwd = null;
+            showToast('Локальный пароль удалён из браузера');
+        },
+
         async addWebhook() {
             const res = await fetch('/webhooks', {
                 method: 'POST',
@@ -233,6 +349,20 @@ function webhooksTab() {
             window.location.reload();
         },
     };
+}
+
+async function addRule(channel, days) {
+    const res = await fetch('/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.csrfToken },
+        body: JSON.stringify({ channel, days_before: parseInt(days), is_global: true }),
+    });
+    if ((await res.json()).success) window.location.reload();
+}
+async function deleteRule(id) {
+    if (!confirm('Удалить правило?')) return;
+    await fetch(`/notifications/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': window.csrfToken } });
+    window.location.reload();
 }
 </script>
 @endpush

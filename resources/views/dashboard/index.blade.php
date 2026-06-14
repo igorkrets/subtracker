@@ -312,6 +312,63 @@
                 <textarea x-model="form.notes" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
             </div>
 
+            {{-- Encrypted notes --}}
+            <div>
+                <label class="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <x-icon icon="lock" icon-set="lucide" class="w-3.5 h-3.5 text-amber-500" />
+                    Заметки (шифр)
+                </label>
+                <textarea x-model="encNote.plain" rows="3"
+                    :placeholder="encNote.wrongPwd ? 'Зашифровано другим паролем — расшифруйте ниже' : (localPwd ? 'Хранится только в зашифрованном виде...' : 'Задайте Локальный пароль в настройках...')"
+                    :disabled="!localPwd && !encNote.wrongPwd"
+                    class="w-full px-3 py-2 border border-amber-300 dark:border-amber-700/60 rounded-lg bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:opacity-50 disabled:cursor-not-allowed font-mono"></textarea>
+
+                {{-- Status hints --}}
+                <template x-if="!localPwd && !encNote.wrongPwd">
+                    <p class="mt-1 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                        <x-icon icon="alert-triangle" icon-set="lucide" class="w-3 h-3 flex-shrink-0" />
+                        Задайте Локальный пароль в <a href="{{ route('settings') }}?tab=security" class="underline">Настройках</a> для шифрования
+                    </p>
+                </template>
+                <template x-if="localPwd && !encNote.wrongPwd && !encNote.plain && form.encrypted_notes">
+                    <p class="mt-1 text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                        <x-icon icon="shield-check" icon-set="lucide" class="w-3 h-3" />
+                        Расшифровано · AES-256-GCM
+                    </p>
+                </template>
+                <template x-if="localPwd && !encNote.wrongPwd && !form.encrypted_notes">
+                    <p class="mt-1 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                        <x-icon icon="shield" icon-set="lucide" class="w-3 h-3" />
+                        Шифруется AES-256-GCM · на сервере хранится только шифртекст
+                    </p>
+                </template>
+
+                {{-- Wrong password warning --}}
+                <template x-if="encNote.wrongPwd">
+                    <div class="mt-1.5">
+                        <p class="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 mb-1.5">
+                            <x-icon icon="key" icon-set="lucide" class="w-3 h-3" />
+                            Зашифровано другим паролем
+                            <button type="button" @click="encNote.showTempPwd = !encNote.showTempPwd"
+                                class="ml-1 underline hover:no-underline">
+                                Попробовать другой пароль
+                            </button>
+                        </p>
+                        <div x-show="encNote.showTempPwd" class="flex gap-2">
+                            <input type="password" x-model="encNote.tempPwd"
+                                placeholder="Введите пароль для расшифровки"
+                                @keydown.enter="decryptWithTempPwd()"
+                                class="flex-1 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                            <button type="button" @click="decryptWithTempPwd()"
+                                :disabled="!encNote.tempPwd"
+                                class="px-3 py-1.5 text-xs bg-amber-500 hover:bg-amber-600 text-white rounded-lg disabled:opacity-50">
+                                Расшифровать
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
             <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                     <input type="checkbox" x-model="form.notifications_enabled" class="rounded">
@@ -439,15 +496,18 @@ function dashboard() {
         renewDate: '',
         renewRecordPayment: true,
         saving: false,
+        localPwd: null,
+        encNote: { plain: '', wrongPwd: false, showTempPwd: false, tempPwd: '' },
         form: {
             name: '', url: '', ip: '', group_id: '', type_slug: '',
             expires_at: '', billing_cycle: '', cost: '', currency: 'RUB',
-            provider_name: '', provider_url: '', notes: '',
+            provider_name: '', provider_url: '', notes: '', encrypted_notes: null,
             notifications_enabled: true, auto_renew: false,
         },
         groupForm: { name: '', color: '#2563EB' },
 
         init() {
+            this.localPwd = window.SubCrypto.getPassword();
             this.initSortable();
         },
 
@@ -484,15 +544,36 @@ function dashboard() {
         resetForm() {
             this.form = { name: '', url: '', ip: '', group_id: '', type_slug: '', expires_at: '',
                 billing_cycle: '', cost: '', currency: 'RUB', provider_name: '', provider_url: '',
-                notes: '', notifications_enabled: true, auto_renew: false };
+                notes: '', encrypted_notes: null, notifications_enabled: true, auto_renew: false };
+            this.encNote = { plain: '', wrongPwd: false, showTempPwd: false, tempPwd: '' };
         },
 
-        editService(serviceId) {
+        async editService(serviceId) {
             const row = document.querySelector(`.service-row[data-id="${serviceId}"]`);
             if (!row) return;
             this.editingService = serviceId;
             this.form = JSON.parse(row.dataset.service || '{}');
+            this.encNote = { plain: '', wrongPwd: false, showTempPwd: false, tempPwd: '' };
+            if (this.form.encrypted_notes && this.localPwd) {
+                try {
+                    this.encNote.plain = await window.SubCrypto.decrypt(this.form.encrypted_notes, this.localPwd);
+                } catch {
+                    this.encNote.wrongPwd = true;
+                }
+            }
             this.showServiceModal = true;
+        },
+
+        async decryptWithTempPwd() {
+            if (!this.encNote.tempPwd || !this.form.encrypted_notes) return;
+            try {
+                this.encNote.plain = await window.SubCrypto.decrypt(this.form.encrypted_notes, this.encNote.tempPwd);
+                this.encNote.wrongPwd = false;
+                this.encNote.showTempPwd = false;
+                this.encNote.tempPwd = '';
+            } catch {
+                showToast('Неверный пароль', 'error');
+            }
         },
 
         editGroup(id, name, color) {
@@ -511,9 +592,24 @@ function dashboard() {
 
         async saveService() {
             this.saving = true;
-            const url = this.editingService
-                ? `/services/${this.editingService}`
-                : '/services';
+            // Encrypt the secure notes field before sending to server
+            if (this.encNote.plain) {
+                if (!this.localPwd) {
+                    showToast('Задайте Локальный пароль в Настройках → Профиль для шифрования', 'error');
+                    this.saving = false;
+                    return;
+                }
+                try {
+                    this.form.encrypted_notes = await window.SubCrypto.encrypt(this.encNote.plain, this.localPwd);
+                } catch {
+                    showToast('Ошибка шифрования', 'error');
+                    this.saving = false;
+                    return;
+                }
+            } else {
+                this.form.encrypted_notes = null;
+            }
+            const url = this.editingService ? `/services/${this.editingService}` : '/services';
             const method = this.editingService ? 'PUT' : 'POST';
             const res = await this.apiFetch(url, method, this.form);
             if (res?.success) {

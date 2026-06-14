@@ -93,6 +93,7 @@ class ServiceController extends Controller
             'notify_days' => ['nullable', 'array'],
             'notify_days.*' => ['integer'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'encrypted_notes' => ['nullable', 'string'],
             'cost' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['nullable', 'string', 'size:3'],
             'provider_name' => ['nullable', 'string', 'max:255'],

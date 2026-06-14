@@ -15,7 +15,7 @@ class Service extends Model
         'name', 'url', 'ip', 'icon', 'icon_set', 'color',
         'expires_at', 'renewed_at', 'billing_cycle', 'billing_interval_days',
         'auto_renew', 'is_trial', 'trial_ends_at', 'last_paid_at',
-        'notify_days', 'notes', 'cost', 'currency',
+        'notify_days', 'notes', 'encrypted_notes', 'cost', 'currency',
         'provider_name', 'provider_url', 'notifications_enabled', 'sort_order',
     ];
 
