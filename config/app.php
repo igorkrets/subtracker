@@ -123,4 +123,9 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'contact_email' => env('CONTACT_EMAIL', ''),
+    'contact_tg' => env('CONTACT_TG', ''),
+    'coffee_url' => env('COFFEE_URL', ''),
+    'require_email_verify' => env('REQUIRE_EMAIL_VERIFY', false),
+
 ];

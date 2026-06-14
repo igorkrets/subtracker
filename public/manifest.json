@@ -1,0 +1,19 @@
+{
+  "name": "SubTracker",
+  "short_name": "SubTracker",
+  "description": "Учёт серверов, доменов и подписок с напоминаниями",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"]
+}
