@@ -41,7 +41,7 @@ SubTracker помогает не забыть продлить VPS, домен, 
 ### 1. Клонирование и зависимости
 
 ```bash
-git clone https://github.com/yourname/subtracker.git /var/www/subtracker
+git clone https://github.com/igorkrets/subtracker.git /var/www/subtracker
 cd /var/www/subtracker
 
 cp .env.example .env
@@ -122,7 +122,7 @@ php artisan telegram:webhook delete
 ### Быстрый старт
 
 ```bash
-git clone https://github.com/yourname/subtracker.git
+git clone https://github.com/igorkrets/subtracker.git
 cd subtracker
 
 cp .env.example .env
