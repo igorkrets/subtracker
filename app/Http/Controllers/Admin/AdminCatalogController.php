@@ -74,7 +74,19 @@ class AdminCatalogController extends Controller
     public function updatePreset(Request $request, CatalogPreset $preset)
     {
         abort_unless(Auth::user()->is_admin, 403);
-        $preset->update($request->all());
+        $data = $request->validate([
+            'name'       => ['sometimes', 'string'],
+            'icon'       => ['sometimes', 'string'],
+            'icon_set'   => ['nullable', 'string'],
+            'color'      => ['nullable', 'string'],
+            'default_url'=> ['nullable', 'string'],
+            'region'     => ['nullable', 'string'],
+            'is_popular' => ['nullable', 'boolean'],
+            'is_active'  => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer'],
+            'type_slug'  => ['sometimes', 'string'],
+        ]);
+        $preset->update($data);
         return response()->json(['success' => true, 'data' => $preset]);
     }
 

@@ -97,12 +97,13 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/api/docs', fn() => view('api-docs'))->name('api.docs');
 
 // Admin routes
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/users', [AdminUserController::class, 'index'])->name('users');
     Route::post('/users/{user}/block', [AdminUserController::class, 'block'])->name('users.block');
     Route::post('/users/{user}/unblock', [AdminUserController::class, 'unblock'])->name('users.unblock');
     Route::patch('/users/{user}/toggle', [AdminUserController::class, 'toggle'])->name('users.toggle');
+    Route::patch('/users/{user}/toggle-admin', [AdminUserController::class, 'toggleAdmin'])->name('users.toggle-admin');
     Route::get('/logs', [AdminLogController::class, 'index'])->name('logs');
     Route::get('/catalog', [AdminCatalogController::class, 'index'])->name('catalog');
     Route::post('/catalog/types', [AdminCatalogController::class, 'storeType'])->name('catalog.types.store');

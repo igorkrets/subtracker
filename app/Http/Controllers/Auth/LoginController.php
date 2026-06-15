@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
@@ -23,23 +22,26 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
-        $key = 'login:' . Str::lower($request->email) . '|' . $request->ip();
+        $ipKey = 'login_ip:' . $request->ip();
 
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            $seconds = RateLimiter::availableIn($key);
+        if (RateLimiter::tooManyAttempts($ipKey, 10)) {
+            $seconds = RateLimiter::availableIn($ipKey);
+            $hours = ceil($seconds / 3600);
             throw ValidationException::withMessages([
-                'email' => ["Слишком много попыток. Повторите через {$seconds} сек."],
+                'email' => ["IP заблокирован из-за подозрительной активности. Повторите через {$hours} ч."],
             ]);
         }
 
         if (!Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
-            RateLimiter::hit($key, 60);
+            RateLimiter::hit($ipKey, 3 * 3600);
+            $attempts = RateLimiter::attempts($ipKey);
+            $remaining = max(0, 10 - $attempts);
             throw ValidationException::withMessages([
-                'email' => ['Неверный email или пароль.'],
+                'email' => ["Неверный email или пароль. Осталось попыток: {$remaining}."],
             ]);
         }
 
-        RateLimiter::clear($key);
+        RateLimiter::clear($ipKey);
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard'));

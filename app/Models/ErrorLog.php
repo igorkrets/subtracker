@@ -11,4 +11,8 @@ class ErrorLog extends Model
     protected $fillable = [
         'user_id', 'message', 'trace', 'file', 'line', 'created_at',
     ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+    ];
 }

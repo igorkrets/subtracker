@@ -171,21 +171,27 @@
             <span><strong class="text-gray-900 dark:text-white font-bold">{{ number_format($stats['services']) }}</strong> записей</span>
         </div>
         @endif
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <div class="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
             @if(config('app.register_enable'))
-            <a href="{{ route('register') }}" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-lg shadow-lg shadow-blue-600/25 transition">
+            <a href="{{ route('register') }}" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-lg shadow-lg shadow-blue-600/25 transition text-center">
                 Начать
             </a>
             @endif
-            <a href="{{ route('login') }}" class="px-8 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-xl font-semibold text-lg transition">
+            <a href="{{ route('login') }}" class="px-8 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white rounded-xl font-semibold text-lg transition text-center">
                 Войти
             </a>
         </div>
-        <br>
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <div id="pwa-install-wrap" class="mt-3 justify-center" style="display:none">
+            <button id="pwa-install-btn"
+                class="inline-flex items-center gap-2 px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-lg shadow-lg shadow-green-600/25 transition w-full sm:w-auto justify-center">
+                <x-icon icon="download" icon-set="lucide" class="w-5 h-5" />
+                Установить приложение
+            </button>
+        </div>
+        <div class="mt-3 flex justify-center">
             <a href="https://github.com/igorkrets/subtracker" target="_blank" rel="noopener"
-               class="inline-flex items-center gap-2 px-8 py-3 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-xl font-semibold text-lg transition">
-                <x-icon icon="github" icon-set="simple-icons" class="w-5 h-5" />
+               class="inline-flex items-center gap-2 px-6 py-2 border border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl font-medium text-base transition">
+                <x-icon icon="github" icon-set="simple-icons" class="w-4 h-4" />
                 GitHub
             </a>
         </div>
@@ -324,6 +330,45 @@
         </div>
     </div>
 </footer>
+
+<script>
+// Service Worker registration for PWA
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// PWA install prompt — mobile only
+(function () {
+    // Don't show on desktop (pointer: fine = mouse)
+    if (window.matchMedia('(pointer: fine)').matches) return;
+
+    var deferredPrompt = null;
+    var wrap = document.getElementById('pwa-install-wrap');
+    var btn  = document.getElementById('pwa-install-btn');
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (wrap) wrap.style.display = 'flex';
+    });
+
+    if (btn) {
+        btn.addEventListener('click', function () {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function () {
+                deferredPrompt = null;
+                if (wrap) wrap.style.display = 'none';
+            });
+        });
+    }
+
+    window.addEventListener('appinstalled', function () {
+        if (wrap) wrap.style.display = 'none';
+        deferredPrompt = null;
+    });
+})();
+</script>
 
 <script>
 (function () {

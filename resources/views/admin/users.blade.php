@@ -3,6 +3,12 @@
 @section('title', 'Пользователи')
 
 @section('content')
+@if(session('success'))
+<div class="mb-4 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded-lg text-sm">
+    {{ session('success') }}
+</div>
+@endif
+
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-xl font-semibold">Пользователи</h1>
     <form method="GET" class="flex gap-2">
@@ -50,14 +56,29 @@
                     @endif
                 </td>
                 <td class="px-4 py-3 text-right">
-                    @if(!$user->is_admin)
-                    <form method="POST" action="{{ route('admin.users.toggle', $user) }}" class="inline">
-                        @csrf @method('PATCH')
-                        <button type="submit" class="text-xs px-2 py-1 rounded {{ $user->is_blocked ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200' }}">
-                            {{ $user->is_blocked ? 'Разблокировать' : 'Заблокировать' }}
-                        </button>
-                    </form>
-                    @endif
+                    <div class="flex items-center justify-end gap-2">
+                        @if($user->id !== auth()->id())
+                        <form method="POST" action="{{ route('admin.users.toggle-admin', $user) }}" class="inline">
+                            @csrf @method('PATCH')
+                            <button type="submit"
+                                data-confirm="{{ $user->is_admin ? 'Снять права администратора у ' . $user->email . '?' : 'Назначить ' . $user->email . ' администратором?' }}"
+                                onclick="return confirm(this.dataset.confirm)"
+                                class="text-xs px-2 py-1 rounded {{ $user->is_admin ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300' : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300' }}">
+                                {{ $user->is_admin ? 'Снять admin' : 'Сделать admin' }}
+                            </button>
+                        </form>
+                        @if(!$user->is_admin)
+                        <form method="POST" action="{{ route('admin.users.toggle', $user) }}" class="inline">
+                            @csrf @method('PATCH')
+                            <button type="submit" class="text-xs px-2 py-1 rounded {{ $user->is_blocked ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300' }}">
+                                {{ $user->is_blocked ? 'Разблокировать' : 'Заблокировать' }}
+                            </button>
+                        </form>
+                        @endif
+                        @else
+                        <span class="text-xs text-gray-400">это вы</span>
+                        @endif
+                    </div>
                 </td>
             </tr>
             @endforeach

@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.rate' => ApiRateLimit::class,
             'log.request' => LogRequest::class,
             'auth.api_token' => \App\Http\Middleware\ApiTokenAuth::class,
+            'admin' => \App\Http\Middleware\IsAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -43,4 +43,13 @@ class AdminUserController extends Controller
         $msg = $user->is_blocked ? 'заблокирован' : 'разблокирован';
         return back()->with('success', "Пользователь {$user->email} {$msg}");
     }
+
+    public function toggleAdmin(User $user)
+    {
+        abort_unless(Auth::user()->is_admin, 403);
+        abort_if($user->id === Auth::id(), 403, 'Нельзя изменить роль самому себе');
+        $user->update(['is_admin' => !$user->is_admin]);
+        $msg = $user->is_admin ? 'назначен администратором' : 'разжалован из администраторов';
+        return back()->with('success', "Пользователь {$user->email} {$msg}");
+    }
 }

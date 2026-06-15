@@ -43,14 +43,14 @@
                         {{ $log->method }}
                     </span>
                 </td>
-                <td class="px-4 py-2 text-xs font-mono max-w-xs truncate">{{ $log->url }}</td>
+                <td class="px-4 py-2 text-xs font-mono max-w-xs truncate">{{ $log->path }}</td>
                 <td class="px-4 py-2">
                     <span class="text-xs font-mono {{ $log->status_code >= 400 ? 'text-red-600' : 'text-green-600' }}">
                         {{ $log->status_code }}
                     </span>
                 </td>
                 <td class="px-4 py-2 text-xs text-gray-500">{{ $log->user?->email ?? '—' }}</td>
-                <td class="px-4 py-2 text-xs font-mono text-gray-500">{{ $log->ip_address }}</td>
+                <td class="px-4 py-2 text-xs font-mono text-gray-500">{{ $log->ip }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -64,10 +64,10 @@
         <div class="flex items-center gap-4 px-4 py-3 cursor-pointer" @click="open = !open">
             <span class="text-xs text-gray-400">{{ $log->created_at->format('d.m H:i:s') }}</span>
             <span class="font-mono text-sm text-red-600 flex-1">{{ Str::limit($log->message, 100) }}</span>
-            <x-icon :icon="open ? 'chevron-up' : 'chevron-down'" icon-set="lucide" class="w-4 h-4 text-gray-400" />
+            <x-icon icon="chevron-down" icon-set="lucide" class="w-4 h-4 text-gray-400" x-bind:icon="open ? 'chevron-up' : 'chevron-down'" />
         </div>
         <div x-show="open" class="border-t border-gray-200 dark:border-gray-700 px-4 py-3">
-            <pre class="text-xs text-red-600 dark:text-red-400 overflow-x-auto whitespace-pre-wrap">{{ $log->stack_trace }}</pre>
+            <pre class="text-xs text-red-600 dark:text-red-400 overflow-x-auto whitespace-pre-wrap">{{ $log->trace }}</pre>
             @if($log->context)
             <div class="mt-2 text-xs text-gray-500">
                 <pre>{{ json_encode($log->context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
