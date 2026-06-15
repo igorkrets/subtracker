@@ -13,7 +13,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password',
+        'name', 'email', 'password', 'google_id',
         'api_token', 'tg_chat_id', 'tg_code', 'tg_connected_at',
         'is_blocked', 'is_admin', 'timezone', 'default_currency', 'display_currency', 'sort_preference',
     ];

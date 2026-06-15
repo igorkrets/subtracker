@@ -315,13 +315,15 @@
             <x-icon icon="layers" icon-set="lucide" class="w-4 h-4" />
             <span>SubTracker &copy; {{ date('Y') }}</span>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4 flex-wrap justify-center">
             @if(config('app.contact_email'))
             <a href="mailto:{{ config('app.contact_email') }}" class="hover:text-blue-600">{{ config('app.contact_email') }}</a>
             @endif
             @if(config('app.contact_tg'))
             <a href="https://t.me/{{ ltrim(config('app.contact_tg'), '@') }}" class="hover:text-blue-600" target="_blank">{{ config('app.contact_tg') }}</a>
             @endif
+            <a href="{{ route('privacy') }}" class="hover:text-blue-600">Конфиденциальность</a>
+            <a href="{{ route('terms') }}" class="hover:text-blue-600">Условия</a>
             <a href="{{ route('api.docs') }}" class="hover:text-blue-600">API</a>
             <a href="https://github.com/igorkrets/subtracker" target="_blank" rel="noopener" class="flex items-center gap-1.5 hover:text-blue-600">
                 <x-icon icon="github" icon-set="simple-icons" class="w-4 h-4" />
@@ -330,6 +332,28 @@
         </div>
     </div>
 </footer>
+
+{{-- Cookie consent banner --}}
+<div x-data="{ show: !localStorage.getItem('cookie_ok') }" x-show="show" x-cloak
+    class="fixed bottom-0 left-0 right-0 z-50 p-4">
+    <div class="max-w-3xl mx-auto bg-gray-900 dark:bg-gray-800 text-white rounded-2xl shadow-2xl px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <x-icon icon="cookie" icon-set="lucide" class="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+        <p class="text-sm text-gray-200 flex-1">
+            Мы используем обязательные cookie для авторизации и защиты форм. Рекламных или трекинговых cookie нет.
+            <a href="{{ route('privacy') }}" class="underline text-blue-400 hover:text-blue-300 ml-1">Подробнее</a>
+        </p>
+        <div class="flex gap-2 flex-shrink-0">
+            <button @click="localStorage.setItem('cookie_ok', '1'); show = false"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition whitespace-nowrap">
+                Понятно
+            </button>
+            <a href="{{ route('privacy') }}"
+                class="px-4 py-2 border border-gray-600 hover:border-gray-400 text-gray-300 hover:text-white text-sm rounded-lg transition whitespace-nowrap">
+                Узнать больше
+            </a>
+        </div>
+    </div>
+</div>
 
 <script>
 // Service Worker registration for PWA
