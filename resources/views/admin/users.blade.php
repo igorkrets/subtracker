@@ -27,6 +27,7 @@
                 <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Telegram</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Регистрация</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Статус</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Лимиты</th>
                 <th class="px-4 py-3 text-right font-medium text-gray-600 dark:text-gray-300">Действия</th>
             </tr>
         </thead>
@@ -54,6 +55,28 @@
                     @else
                     <span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">Активен</span>
                     @endif
+                </td>
+                <td class="px-4 py-3">
+                    <details class="group">
+                        <summary class="cursor-pointer text-xs text-blue-600 dark:text-blue-400 hover:underline list-none">
+                            {{ $user->max_services ?? $globalSettings->max_services }} / {{ $user->max_notification_rules ?? $globalSettings->max_notification_rules }} / {{ $user->max_webhooks ?? $globalSettings->max_webhooks }}
+                        </summary>
+                        <form method="POST" action="{{ route('admin.users.limits', $user) }}" class="mt-2 space-y-1.5 w-40">
+                            @csrf @method('PUT')
+                            <input type="number" name="max_services" min="1" placeholder="Сервисы ({{ $globalSettings->max_services }})"
+                                value="{{ $user->max_services }}"
+                                class="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
+                            <input type="number" name="max_notification_rules" min="1" placeholder="Уведомления ({{ $globalSettings->max_notification_rules }})"
+                                value="{{ $user->max_notification_rules }}"
+                                class="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
+                            <input type="number" name="max_webhooks" min="1" placeholder="Вебхуки ({{ $globalSettings->max_webhooks }})"
+                                value="{{ $user->max_webhooks }}"
+                                class="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700">
+                            <button type="submit" class="w-full px-2 py-1 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 rounded">
+                                Сохранить
+                            </button>
+                        </form>
+                    </details>
                 </td>
                 <td class="px-4 py-3 text-right">
                     <div class="flex items-center justify-end gap-2">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,8 @@ class AdminUserController extends Controller
         }
 
         $users = $query->orderBy('created_at', 'desc')->paginate(50);
-        return view('admin.users', compact('users'));
+        $globalSettings = AppSetting::current();
+        return view('admin.users', compact('users', 'globalSettings'));
     }
 
     public function block(User $user)
@@ -51,5 +53,19 @@ class AdminUserController extends Controller
         $user->update(['is_admin' => !$user->is_admin]);
         $msg = $user->is_admin ? 'назначен администратором' : 'разжалован из администраторов';
         return back()->with('success', "Пользователь {$user->email} {$msg}");
+    }
+
+    public function updateLimits(Request $request, User $user)
+    {
+        abort_unless(Auth::user()->is_admin, 403);
+
+        $data = $request->validate([
+            'max_services' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'max_notification_rules' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'max_webhooks' => ['nullable', 'integer', 'min:1', 'max:1000'],
+        ]);
+
+        $user->update($data);
+        return back()->with('success', "Лимиты пользователя {$user->email} обновлены");
     }
 }

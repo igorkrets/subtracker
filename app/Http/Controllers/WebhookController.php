@@ -17,8 +17,14 @@ class WebhookController extends Controller
 
     public function store(Request $request)
     {
+        $user = Auth::user();
+        $limit = $user->maxWebhooks();
+        if ($user->webhooks()->count() >= $limit) {
+            return response()->json(['success' => false, 'message' => "Достигнут лимит вебхуков ({$limit})"], 422);
+        }
+
         $data = $this->validated($request);
-        $webhook = Auth::user()->webhooks()->create($data);
+        $webhook = $user->webhooks()->create($data);
         return response()->json(['success' => true, 'data' => $webhook]);
     }
 

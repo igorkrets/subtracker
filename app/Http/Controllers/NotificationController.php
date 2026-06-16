@@ -16,6 +16,12 @@ class NotificationController extends Controller
 
     public function store(Request $request)
     {
+        $user = Auth::user();
+        $limit = $user->maxNotificationRules();
+        if ($user->notificationRules()->count() >= $limit) {
+            return response()->json(['success' => false, 'message' => "Достигнут лимит правил уведомлений ({$limit})"], 422);
+        }
+
         $data = $request->validate([
             'channel' => ['required', 'in:tg,webhook'],
             'days_before' => ['required', 'integer', 'min:0', 'max:365'],
@@ -24,7 +30,7 @@ class NotificationController extends Controller
             'service_id' => ['nullable', 'exists:services,id'],
         ]);
 
-        $rule = Auth::user()->notificationRules()->create($data);
+        $rule = $user->notificationRules()->create($data);
         return response()->json(['success' => true, 'data' => $rule]);
     }
 

@@ -10,9 +10,15 @@ class ServiceController extends Controller
 {
     public function store(Request $request)
     {
+        $user = Auth::user();
+        $limit = $user->maxServices();
+        if ($user->services()->count() >= $limit) {
+            return response()->json(['success' => false, 'message' => "Достигнут лимит сервисов ({$limit})"], 422);
+        }
+
         $data = $this->validated($request);
-        $maxOrder = Auth::user()->services()->max('sort_order') ?? 0;
-        $service = Auth::user()->services()->create(array_merge($data, ['sort_order' => $maxOrder + 1]));
+        $maxOrder = $user->services()->max('sort_order') ?? 0;
+        $service = $user->services()->create(array_merge($data, ['sort_order' => $maxOrder + 1]));
         $service->load('group', 'serviceType');
         return response()->json(['success' => true, 'data' => $this->serviceData($service)]);
     }
@@ -58,6 +64,10 @@ class ServiceController extends Controller
     public function duplicate(Service $service)
     {
         abort_if($service->user_id !== Auth::id(), 403);
+        $limit = Auth::user()->maxServices();
+        if (Auth::user()->services()->count() >= $limit) {
+            return response()->json(['success' => false, 'message' => "Достигнут лимит сервисов ({$limit})"], 422);
+        }
         $new = $service->replicate(['expires_at', 'renewed_at', 'last_paid_at', 'trial_ends_at']);
         $new->name = $service->name . ' (копия)';
         $new->sort_order = Auth::user()->services()->max('sort_order') + 1;

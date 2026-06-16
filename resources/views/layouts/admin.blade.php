@@ -30,6 +30,9 @@
         <a href="{{ route('admin.catalog') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.catalog*') ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
             <x-icon icon="layers" icon-set="lucide" class="w-4 h-4" /> Каталог
         </a>
+        <a href="{{ route('admin.settings') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.settings') ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700' }}">
+            <x-icon icon="settings" icon-set="lucide" class="w-4 h-4" /> Настройки
+        </a>
     </nav>
     <div class="p-3 border-t border-gray-200 dark:border-gray-700">
         <form method="POST" action="{{ route('logout') }}">

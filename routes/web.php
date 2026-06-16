@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminCatalogController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminLogController;
+use App\Http\Controllers\Admin\AdminSettingsController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\LoginController;
@@ -124,6 +125,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/users/{user}/unblock', [AdminUserController::class, 'unblock'])->name('users.unblock');
     Route::patch('/users/{user}/toggle', [AdminUserController::class, 'toggle'])->name('users.toggle');
     Route::patch('/users/{user}/toggle-admin', [AdminUserController::class, 'toggleAdmin'])->name('users.toggle-admin');
+    Route::put('/users/{user}/limits', [AdminUserController::class, 'updateLimits'])->name('users.limits');
+    Route::get('/settings', [AdminSettingsController::class, 'index'])->name('settings');
+    Route::put('/settings', [AdminSettingsController::class, 'update'])->name('settings.update');
     Route::get('/logs', [AdminLogController::class, 'index'])->name('logs');
     Route::get('/catalog', [AdminCatalogController::class, 'index'])->name('catalog');
     Route::post('/catalog/types', [AdminCatalogController::class, 'storeType'])->name('catalog.types.store');
