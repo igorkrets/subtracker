@@ -18,6 +18,10 @@
             class="px-3 py-1.5 text-sm rounded-lg {{ request('type') === 'notifications' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
             Уведомления
         </a>
+        <a href="{{ request()->fullUrlWithQuery(['type' => 'webhooks']) }}"
+            class="px-3 py-1.5 text-sm rounded-lg {{ request('type') === 'webhooks' ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600' }}">
+            Вебхуки
+        </a>
     </div>
 </div>
 
@@ -78,6 +82,27 @@
     @endforeach
 </div>
 
+@elseif(request('type') === 'webhooks')
+<div class="space-y-3">
+    @foreach($logs as $log)
+    <div x-data="{ open: false }" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-4 px-4 py-3 cursor-pointer" @click="open = !open">
+            <span class="text-xs text-gray-400 w-28 shrink-0">{{ $log->sent_at?->format('d.m H:i:s') }}</span>
+            <span class="text-xs font-medium w-36 shrink-0 truncate">{{ $log->webhook?->name ?? '—' }}</span>
+            <span class="text-xs text-gray-500 w-36 shrink-0 truncate">{{ $log->service?->name ?? '—' }}</span>
+            <span class="font-mono text-xs font-bold {{ $log->status_code >= 200 && $log->status_code < 300 ? 'text-green-600' : 'text-red-600' }}">
+                {{ $log->status_code ?? 'err' }}
+            </span>
+            <span class="text-xs text-gray-500 flex-1 truncate">{{ Str::limit($log->response_body, 100) }}</span>
+            <x-icon icon="chevron-down" icon-set="lucide" class="w-4 h-4 text-gray-400" x-bind:icon="open ? 'chevron-up' : 'chevron-down'" />
+        </div>
+        <div x-show="open" class="border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+            <pre class="text-xs text-gray-600 dark:text-gray-400 overflow-x-auto whitespace-pre-wrap">{{ $log->response_body }}</pre>
+        </div>
+    </div>
+    @endforeach
+</div>
+
 @else
 <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
     <table class="w-full text-sm">
@@ -87,6 +112,8 @@
                 <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Канал</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Сервис</th>
                 <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Статус</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Попытка</th>
+                <th class="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">Ошибка</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -96,6 +123,10 @@
                 <td class="px-4 py-2 text-xs font-medium">{{ $log->channel }}</td>
                 <td class="px-4 py-2 text-xs">{{ $log->service?->name ?? '—' }}</td>
                 <td class="px-4 py-2 text-xs {{ $log->status === 'sent' ? 'text-green-600' : 'text-red-600' }}">{{ $log->status }}</td>
+                <td class="px-4 py-2 text-xs text-gray-500">
+                    {{ $log->attempt }}@if($log->attempt > 1)<span class="text-orange-500"> (retry)</span>@endif
+                </td>
+                <td class="px-4 py-2 text-xs text-red-500 max-w-xs truncate">{{ $log->error }}</td>
             </tr>
             @endforeach
         </tbody>

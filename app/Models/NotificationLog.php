@@ -9,7 +9,7 @@ class NotificationLog extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'user_id', 'service_id', 'channel', 'message', 'sent_at', 'status', 'sent_date',
+        'user_id', 'service_id', 'channel', 'message', 'sent_at', 'status', 'sent_date', 'attempt', 'error',
     ];
 
     protected $casts = [

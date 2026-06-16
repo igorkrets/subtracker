@@ -31,7 +31,7 @@ class TelegramService
         $text = "🔔 *SubTracker*\n";
         $text .= "Истекает: *{$service->name}*\n";
         $text .= "Дата: " . $service->expires_at->format('d.m.Y') . " ({$daysText})\n";
-        if ($service->ip) $text .= "IP: `{$service->ip}`\n";
+        /* if ($service->ip) $text .= "IP: `{$service->ip}`\n"; */
         if ($service->provider_name) $text .= "Провайдер: {$service->provider_name}\n";
         if ($service->cost) $text .= "💰 {$service->cost} {$service->currency}\n";
         if ($service->provider_url) $text .= "🔗 {$service->provider_url}";

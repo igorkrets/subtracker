@@ -10,15 +10,21 @@ use Illuminate\Support\Facades\Http;
 
 class WebhookService
 {
-    public function sendNotification(Service $service, User $user): void
+    public function sendNotification(Service $service, User $user): bool
     {
         $webhooks = Webhook::where('user_id', $user->id)
             ->where('is_active', true)
             ->get();
 
+        $allSucceeded = true;
+
         foreach ($webhooks as $webhook) {
-            $this->send($webhook, $service);
+            if (!$this->send($webhook, $service)) {
+                $allSucceeded = false;
+            }
         }
+
+        return $allSucceeded;
     }
 
     public function send(Webhook $webhook, Service $service): bool
