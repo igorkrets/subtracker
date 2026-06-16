@@ -3,11 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SubTracker — трекер подписок и серверов</title>
-    <meta name="description" content="Бесплатный сервис для учёта серверов, доменов, VPS и подписок с напоминаниями о сроках оплаты">
+    <meta name="theme-color" content="#2563eb">
+    <x-seo-meta
+        title="SubTracker — трекер подписок, серверов и VPS с уведомлениями"
+        description="Учёт серверов, доменов, VPS и подписок в одном месте: Telegram-напоминания об оплате, REST API, экспорт в XLSX/PDF и аналитика расходов. Бесплатно, без ограничений." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="manifest" href="/manifest.json">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "SubTracker",
+        "url": "{{ url('/') }}",
+        "description": "Бесплатный сервис для учёта серверов, доменов, VPS и подписок с напоминаниями о сроках оплаты",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "RUB"
+        }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "SubTracker бесплатный?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Да, сервис полностью бесплатный, без ограничений на количество подписок, серверов или доменов." }
+            },
+            {
+                "@type": "Question",
+                "name": "Какие уведомления поддерживаются?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Telegram-бот и вебхуки напоминают о продлении за 1, 3, 7, 14 или 30 дней — настройка для каждой группы отдельно." }
+            },
+            {
+                "@type": "Question",
+                "name": "Есть ли API для интеграций?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Да, доступен полноценный REST API v1 с встроенной документацией для интеграции с другими инструментами." }
+            },
+            {
+                "@type": "Question",
+                "name": "Можно ли перенести данные из таблиц Excel или Google Sheets?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Да, поддерживается импорт из CSV и JSON, а также полный экспорт и бекап базы в один клик." }
+            },
+            {
+                "@type": "Question",
+                "name": "Насколько безопасно хранить данные в SubTracker?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Заметки шифруются по алгоритму AES-256, ключ хранится локально и не передаётся на сервер." }
+            },
+            {
+                "@type": "Question",
+                "name": "Поддерживаются российские сервисы и провайдеры?",
+                "acceptedAnswer": { "@type": "Answer", "text": "Да, в каталоге 85+ сервисов, включая российских провайдеров: Timeweb, Яндекс 360 и другие, помимо международных AWS, Hetzner, DigitalOcean." }
+            }
+        ]
+    }
+    </script>
 </head>
 <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
@@ -240,7 +296,7 @@
                 </div>
                 {{-- Image placeholder --}}
                 <div id="comparison-before" class="aspect-video bg-gray-100 dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center">
-                    <span class="text-sm text-gray-400"><img src="/imgs/landing/googlesheets.jpg" alt="Google Sheets" class="w-full h-full object-cover"></span>
+                    <span class="text-sm text-gray-400"><img src="/imgs/landing/googlesheets.jpg" alt="Ручной учёт подписок и серверов в таблице Google Sheets" width="640" height="360" loading="lazy" class="w-full h-full object-cover"></span>
                 </div>
                 <ul class="mt-5 space-y-2.5 text-sm text-gray-500 dark:text-gray-400">
                     <li class="flex items-center gap-2"><span class="text-red-400 font-bold">✕</span> Нет уведомлений — легко пропустить</li>
@@ -259,7 +315,7 @@
                 </div>
                 {{-- Image placeholder --}}
                 <div id="comparison-after" class="aspect-video bg-blue-50 dark:bg-blue-900/10 rounded-xl border-2 border-blue-200 dark:border-blue-800 overflow-hidden flex items-center justify-center">
-                    <span class="text-sm text-blue-400"><img src="/imgs/landing/subservice.jpg" alt="SubTracker" class="w-full h-full object-cover"></span>
+                    <span class="text-sm text-blue-400"><img src="/imgs/landing/subservice.jpg" alt="Интерфейс SubTracker — учёт подписок, серверов и VPS с уведомлениями" width="640" height="360" loading="lazy" class="w-full h-full object-cover"></span>
                 </div>
                 <ul class="mt-5 space-y-2.5 text-sm text-gray-700 dark:text-gray-300">
                     <li class="flex items-center gap-2"><span class="text-green-500 font-bold">✓</span> Telegram-уведомления за 1–30 дней</li>
@@ -293,6 +349,31 @@
                 +{{ $presets->count() - 20 }} ещё
             </div>
             @endif
+        </div>
+    </div>
+</section>
+
+{{-- FAQ --}}
+<section class="py-16 px-4">
+    <div class="max-w-3xl mx-auto">
+        <h2 class="text-2xl font-bold text-center mb-10">Частые вопросы</h2>
+        <div class="space-y-3">
+            @foreach([
+                ['q' => 'SubTracker бесплатный?', 'a' => 'Да, сервис полностью бесплатный, без ограничений на количество подписок, серверов или доменов.'],
+                ['q' => 'Какие уведомления поддерживаются?', 'a' => 'Telegram-бот и вебхуки напоминают о продлении за 1, 3, 7, 14 или 30 дней — настройка для каждой группы отдельно.'],
+                ['q' => 'Есть ли API для интеграций?', 'a' => 'Да, доступен полноценный REST API v1 с встроенной документацией для интеграции с другими инструментами.'],
+                ['q' => 'Можно ли перенести данные из таблиц Excel или Google Sheets?', 'a' => 'Да, поддерживается импорт из CSV и JSON, а также полный экспорт и бекап базы в один клик.'],
+                ['q' => 'Насколько безопасно хранить данные в SubTracker?', 'a' => 'Заметки шифруются по алгоритму AES-256, ключ хранится локально и не передаётся на сервер.'],
+                ['q' => 'Поддерживаются российские сервисы и провайдеры?', 'a' => 'Да, в каталоге 85+ сервисов, включая российских провайдеров: Timeweb, Яндекс 360 и другие, помимо международных AWS, Hetzner, DigitalOcean.'],
+            ] as $faq)
+            <details class="group bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 px-5 py-4">
+                <summary class="font-medium cursor-pointer flex items-center justify-between gap-3 list-none">
+                    {{ $faq['q'] }}
+                    <x-icon icon="chevron-down" icon-set="lucide" class="w-4 h-4 flex-shrink-0 transition group-open:rotate-180" />
+                </summary>
+                <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">{{ $faq['a'] }}</p>
+            </details>
+            @endforeach
         </div>
     </div>
 </section>

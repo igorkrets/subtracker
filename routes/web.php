@@ -45,6 +45,19 @@ Route::middleware('guest')->group(function () {
 // Legal pages
 Route::get('/privacy', fn() => view('legal.privacy'))->name('privacy');
 Route::get('/terms', fn() => view('legal.terms'))->name('terms');
+
+// Sitemap
+Route::get('/sitemap.xml', function () {
+    $urls = [
+        ['loc' => url('/'), 'changefreq' => 'weekly', 'priority' => '1.0'],
+        ['loc' => route('login'), 'changefreq' => 'monthly', 'priority' => '0.5'],
+        ['loc' => route('register'), 'changefreq' => 'monthly', 'priority' => '0.5'],
+        ['loc' => route('privacy'), 'changefreq' => 'yearly', 'priority' => '0.3'],
+        ['loc' => route('terms'), 'changefreq' => 'yearly', 'priority' => '0.3'],
+        ['loc' => route('api.docs'), 'changefreq' => 'monthly', 'priority' => '0.6'],
+    ];
+    return response()->view('sitemap', compact('urls'))->header('Content-Type', 'application/xml');
+})->name('sitemap');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Authenticated routes

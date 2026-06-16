@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Условия использования — SubTracker</title>
+    <x-seo-meta
+        title="Условия использования — SubTracker"
+        description="Условия использования сервиса учёта подписок, серверов и VPS SubTracker." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

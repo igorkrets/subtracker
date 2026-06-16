@@ -1,5 +1,6 @@
 <x-app-layout>
 <x-slot name="title">API Документация</x-slot>
+<x-slot name="description">REST API v1 для SubTracker — управляйте подписками, серверами и уведомлениями программно.</x-slot>
 
 <div class="max-w-4xl" x-data="{ section: 'intro', showKey: false }">
 

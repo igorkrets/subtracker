@@ -129,4 +129,7 @@ return [
     'require_email_verify' => env('REQUIRE_EMAIL_VERIFY', false),
     'register_enable'      => env('REGISTER_ENABLE', true),
 
+    'google_site_verification' => env('GOOGLE_SITE_VERIFICATION', ''),
+    'yandex_site_verification' => env('YANDEX_SITE_VERIFICATION', ''),
+
 ];
